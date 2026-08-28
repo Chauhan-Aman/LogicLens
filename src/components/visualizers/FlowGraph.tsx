@@ -257,7 +257,9 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
         className={`w-16 h-16 rounded-full border-2 ${borderColor} flex flex-col items-center justify-center cursor-pointer transition-all duration-300 z-10 shrink-0`}
       >
         <RefreshCcw size={20} className={isActive ? 'text-blue-400' : 'text-white/40'} />
-        <span className="text-[9px] font-bold tracking-widest text-white/40 mt-1 uppercase">Loop</span>
+        <span className="text-[9px] font-bold tracking-widest text-white/40 mt-1 uppercase">
+          {node.label ? `${node.label} loop` : 'Loop'}
+        </span>
       </div>
       
       <AnimatePresence>
