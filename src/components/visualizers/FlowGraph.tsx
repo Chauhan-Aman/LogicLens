@@ -90,7 +90,7 @@ function TreeStep({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
   );
 }
 
-function TreeIteration({ node, currentStep, setCurrentStep }: { node: ExecutionNode, currentStep: number, setCurrentStep: (s: number) => void }) {
+function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: ExecutionNode, currentStep: number, setCurrentStep: (s: number) => void, index?: number }) {
   // Check if any child step is currently active
   const isActive = React.useMemo(() => {
     const checkActive = (n: ExecutionNode): boolean => {
@@ -125,9 +125,7 @@ function TreeIteration({ node, currentStep, setCurrentStep }: { node: ExecutionN
   };
   extractVars(node);
 
-  const title = varsSet.size > 0 
-    ? Array.from(varsSet.entries()).map(([k, v]) => `${k} = ${v}`).join(', ') 
-    : 'Iteration Start';
+  const title = index !== undefined ? `Iteration ${index}` : 'Iteration';
 
   const isSuccess = lastComparison && (lastComparison as any).event.result === true;
   const borderColor = isActive ? 'border-indigo-500 ring-1 ring-indigo-500/50 bg-indigo-500/10' : 'border-white/10 bg-[#111115] hover:border-white/20';
@@ -198,8 +196,8 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
 
   let childrenToRender: React.ReactNode[] = [];
   if (node.children.length <= 6) {
-    childrenToRender = node.children.map(child => (
-      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
+    childrenToRender = node.children.map((child, i) => (
+      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} index={i + 1} />
     ));
   } else {
     // Find active index
@@ -211,8 +209,8 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
       return checkActive(c);
     });
 
-    const renderNode = (child: ExecutionNode) => (
-      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
+    const renderNode = (child: ExecutionNode, i: number) => (
+      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} index={i + 1} />
     );
 
     const renderPlaceholder = (count: number, key: string) => (
@@ -241,7 +239,7 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
       if (i > lastIndex + 1) {
         childrenToRender.push(renderPlaceholder(i - lastIndex - 1, `skip-${lastIndex}-${i}`));
       }
-      childrenToRender.push(renderNode(node.children[i]));
+      childrenToRender.push(renderNode(node.children[i], i));
       lastIndex = i;
     }
   }
@@ -281,9 +279,9 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
   );
 }
 
-function TreeNode({ node, currentStep, setCurrentStep }: { node: ExecutionNode, currentStep: number, setCurrentStep: (s: number) => void }) {
+function TreeNode({ node, currentStep, setCurrentStep, index }: { node: ExecutionNode, currentStep: number, setCurrentStep: (s: number) => void, index?: number }) {
   if (node.type === 'loop') return <TreeLoop node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} />;
-  if (node.type === 'iteration') return <TreeIteration node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} />;
+  if (node.type === 'iteration') return <TreeIteration node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} index={index} />;
   
   // function or step
   if (node.children.length === 0) return <TreeStep node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} />;
