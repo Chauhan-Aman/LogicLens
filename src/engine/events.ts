@@ -1,3 +1,14 @@
+// ─── Algorithm Pattern Types ──────────────────────────────────────────────────
+
+export type AlgoPattern =
+  | 'two-pointer'
+  | 'sliding-window'
+  | 'divide-conquer'
+  | 'sorting'
+  | 'hashmap-lookup'
+  | 'dp'
+  | 'generic';
+
 // ─── Execution Event Types ───────────────────────────────────────────────────
 
 export type EventType =
@@ -17,7 +28,12 @@ export type EventType =
   | 'PUSH'
   | 'POP'
   | 'HIGHLIGHT'
-  | 'ANNOTATION';
+  | 'ANNOTATION'
+  | 'RANGE_HIGHLIGHT'
+  | 'ARRAY_SPLIT'
+  | 'ARRAY_MERGE'
+  | 'RECURSIVE_CALL'
+  | 'RECURSIVE_RETURN';
 
 export interface ExecutionEvent {
   type: EventType;
@@ -28,6 +44,11 @@ export interface ExecutionEvent {
   array?: string;
   index?: number;
   indexB?: number; // for swap
+  // Range / recursive events
+  rangeStart?: number;
+  rangeEnd?: number;
+  depth?: number;   // recursive call depth
+  label?: string;   // e.g. "left half", "merging", "sorted"
   // Map / Set events
   map?: string;
   set?: string;
@@ -48,11 +69,20 @@ export interface ExecutionEvent {
 
 // ─── State Snapshot ──────────────────────────────────────────────────────────
 
+export interface ActiveRange {
+  start: number;
+  end: number;
+  depth: number;
+  label?: string;
+  color?: 'violet' | 'cyan' | 'green' | 'orange' | 'pink' | 'yellow';
+}
+
 export interface ArrayState {
   values: unknown[];
   highlights: number[];      // indices highlighted this step
   writeIndex?: number;       // index being written
   swapIndices?: [number, number];
+  activeRanges?: ActiveRange[];
 }
 
 export interface MapState {
@@ -68,6 +98,7 @@ export interface SetState {
 export interface FunctionFrame {
   name: string;
   args: unknown[];
+  depth: number;
 }
 
 export interface StateSnapshot {
@@ -80,4 +111,7 @@ export interface StateSnapshot {
   annotation: string;
   event: ExecutionEvent;
   operationCount: number;
+  // Universal visualization fields
+  recursiveDepth: number;
+  changedVariable?: string; // which variable changed this step (for flash animation)
 }

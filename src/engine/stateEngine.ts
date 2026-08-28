@@ -6,6 +6,8 @@
 
 import type { ExecutionEvent, StateSnapshot, ArrayState, MapState, SetState } from './events';
 
+const RANGE_COLORS = ['violet', 'cyan', 'green', 'orange', 'pink', 'yellow'] as const;
+
 function cloneState(snap: StateSnapshot): StateSnapshot {
   return {
     step: snap.step,
@@ -13,7 +15,12 @@ function cloneState(snap: StateSnapshot): StateSnapshot {
     arrays: Object.fromEntries(
       Object.entries(snap.arrays).map(([k, v]) => [
         k,
-        { ...v, values: [...v.values], highlights: [] },
+        {
+          ...v,
+          values: [...v.values],
+          highlights: [],
+          activeRanges: v.activeRanges ? [...v.activeRanges] : [],
+        },
       ])
     ),
     maps: Object.fromEntries(
@@ -32,6 +39,8 @@ function cloneState(snap: StateSnapshot): StateSnapshot {
     annotation: '',
     event: snap.event,
     operationCount: snap.operationCount,
+    recursiveDepth: snap.recursiveDepth,
+    changedVariable: undefined,
   };
 }
 
@@ -48,10 +57,13 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
     annotation: 'Execution started',
     event: { type: 'ANNOTATION', message: 'Start' },
     operationCount: 0,
+    recursiveDepth: 0,
+    changedVariable: undefined,
   };
   timeline.push(initialSnap);
 
   let current = cloneState(initialSnap);
+  let recursiveDepth = 0;
 
   for (let i = 0; i < events.length; i++) {
     const ev = events[i];
@@ -60,6 +72,7 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
     next.event = ev;
     next.operationCount = current.operationCount + 1;
     next.annotation = '';
+    next.changedVariable = undefined;
 
     // Clear all highlights from previous step
     for (const arr of Object.values(next.arrays)) {
@@ -79,10 +92,15 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
         if (ev.variable !== undefined) {
           next.variables[ev.variable] = ev.value;
           next.annotation = `${ev.variable} = ${JSON.stringify(ev.value)}`;
-          
-          // If the variable is an array, automatically register it in the arrays namespace for the visualizer
+          next.changedVariable = ev.variable;
+
+          // If the value is an array, also register it in the arrays visualizer
           if (Array.isArray(ev.value)) {
-            next.arrays[ev.variable] = { values: [...ev.value], highlights: [] };
+            next.arrays[ev.variable] = {
+              values: [...ev.value as unknown[]],
+              highlights: [],
+              activeRanges: [],
+            };
           }
         }
         break;
@@ -91,11 +109,12 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
       case 'ARRAY_ACCESS': {
         const arrName = ev.array ?? 'arr';
         if (!next.arrays[arrName]) {
-          next.arrays[arrName] = { values: [], highlights: [] };
+          next.arrays[arrName] = { values: [], highlights: [], activeRanges: [] };
         }
         if (ev.index !== undefined) {
           next.arrays[arrName].highlights = [ev.index];
-          next.annotation = `Read ${arrName}[${ev.index}] = ${JSON.stringify(next.arrays[arrName].values[ev.index])}`;
+          const val = next.arrays[arrName].values[ev.index];
+          next.annotation = `Read ${arrName}[${ev.index}] = ${JSON.stringify(val)}`;
         }
         break;
       }
@@ -103,7 +122,7 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
       case 'ARRAY_WRITE': {
         const arrName = ev.array ?? 'arr';
         if (!next.arrays[arrName]) {
-          next.arrays[arrName] = { values: [], highlights: [] };
+          next.arrays[arrName] = { values: [], highlights: [], activeRanges: [] };
         }
         if (ev.index !== undefined) {
           next.arrays[arrName].values[ev.index] = ev.value;
@@ -121,7 +140,63 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
           arr[ev.index] = arr[ev.indexB];
           arr[ev.indexB] = tmp;
           next.arrays[arrName].swapIndices = [ev.index, ev.indexB];
+          next.arrays[arrName].highlights = [ev.index, ev.indexB];
           next.annotation = `Swap ${arrName}[${ev.index}] ↔ ${arrName}[${ev.indexB}]`;
+        }
+        break;
+      }
+
+      case 'RANGE_HIGHLIGHT': {
+        const arrName = ev.array ?? 'arr';
+        if (!next.arrays[arrName]) {
+          next.arrays[arrName] = { values: [], highlights: [], activeRanges: [] };
+        }
+        if (ev.rangeStart !== undefined && ev.rangeEnd !== undefined) {
+          const depth = ev.depth ?? 0;
+          const color = RANGE_COLORS[depth % RANGE_COLORS.length];
+          const existing = (next.arrays[arrName].activeRanges ?? []).filter(
+            r => !(r.start === ev.rangeStart && r.end === ev.rangeEnd)
+          );
+          next.arrays[arrName].activeRanges = [
+            ...existing,
+            { start: ev.rangeStart, end: ev.rangeEnd, depth, label: ev.label, color },
+          ];
+          next.annotation = ev.label
+            ? `${ev.label} [${ev.rangeStart}..${ev.rangeEnd}]`
+            : `Range [${ev.rangeStart}..${ev.rangeEnd}]`;
+        }
+        break;
+      }
+
+      case 'ARRAY_SPLIT': {
+        const arrName = ev.array ?? 'arr';
+        if (!next.arrays[arrName]) {
+          next.arrays[arrName] = { values: [], highlights: [], activeRanges: [] };
+        }
+        if (ev.rangeStart !== undefined && ev.rangeEnd !== undefined) {
+          const depth = ev.depth ?? 0;
+          const color = RANGE_COLORS[depth % RANGE_COLORS.length];
+          next.arrays[arrName].activeRanges = [
+            ...(next.arrays[arrName].activeRanges ?? []),
+            { start: ev.rangeStart, end: ev.rangeEnd, depth, label: ev.label ?? 'split', color },
+          ];
+          next.annotation = `Split [${ev.rangeStart}..${ev.rangeEnd}]${ev.label ? ` — ${ev.label}` : ''}`;
+        }
+        break;
+      }
+
+      case 'ARRAY_MERGE': {
+        const arrName = ev.array ?? 'arr';
+        if (next.arrays[arrName] && ev.rangeStart !== undefined && ev.rangeEnd !== undefined) {
+          // Remove sub-ranges and show merged range
+          next.arrays[arrName].activeRanges = (next.arrays[arrName].activeRanges ?? []).filter(
+            r => !(r.start >= ev.rangeStart! && r.end <= ev.rangeEnd!)
+          );
+          // Highlight the merged region
+          for (let idx = ev.rangeStart; idx <= ev.rangeEnd; idx++) {
+            next.arrays[arrName].highlights.push(idx);
+          }
+          next.annotation = `Merged [${ev.rangeStart}..${ev.rangeEnd}]`;
         }
         break;
       }
@@ -181,19 +256,30 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
       }
 
       case 'COMPARISON': {
-        next.annotation = `Compare: ${JSON.stringify(ev.left)} vs ${JSON.stringify(ev.right)} → ${ev.result}`;
+        next.annotation = `Compare: ${JSON.stringify(ev.left)} vs ${JSON.stringify(ev.right)} → ${ev.result ? '✓ true' : '✗ false'}`;
         break;
       }
 
-      case 'FUNCTION_ENTER': {
-        next.callStack = [...next.callStack, { name: ev.fn ?? '?', args: ev.args ?? [] }];
-        next.annotation = `Call: ${ev.fn}(${(ev.args ?? []).map(a => JSON.stringify(a)).join(', ')})`;
+      case 'FUNCTION_ENTER':
+      case 'RECURSIVE_CALL': {
+        recursiveDepth++;
+        next.recursiveDepth = recursiveDepth;
+        next.callStack = [
+          ...next.callStack,
+          { name: ev.fn ?? '?', args: ev.args ?? [], depth: recursiveDepth },
+        ];
+        next.annotation = `▶ ${ev.fn}(${(ev.args ?? []).map(a => JSON.stringify(a)).join(', ')})`;
         break;
       }
 
-      case 'FUNCTION_EXIT': {
+      case 'FUNCTION_EXIT':
+      case 'RECURSIVE_RETURN': {
+        recursiveDepth = Math.max(0, recursiveDepth - 1);
+        next.recursiveDepth = recursiveDepth;
         next.callStack = next.callStack.slice(0, -1);
-        next.annotation = `Return: ${JSON.stringify(ev.returnValue)}`;
+        next.annotation = ev.returnValue !== undefined
+          ? `◀ return ${JSON.stringify(ev.returnValue)}`
+          : '◀ return';
         break;
       }
 
@@ -208,6 +294,7 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
       }
     }
 
+    next.recursiveDepth = recursiveDepth;
     timeline.push(next);
     current = next;
   }

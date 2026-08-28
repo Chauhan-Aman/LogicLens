@@ -60,6 +60,80 @@ export function transpileCode(code: string): string {
           }
         },
 
+        // Track i++, i--, ++i, --i
+        UpdateExpression(path: any) {
+          if (path.node.loc === null) return;
+          if (!t.isIdentifier(path.node.argument)) return;
+          const varName = path.node.argument.name;
+          // Only track at statement level
+          if (t.isExpressionStatement(path.parent)) {
+            const trackStatement = t.expressionStatement(
+              t.callExpression(
+                t.memberExpression(t.identifier('__ll'), t.identifier('setVar')),
+                [t.stringLiteral(varName), t.identifier(varName)]
+              )
+            );
+            path.parentPath.insertAfter(trackStatement);
+          }
+        },
+
+        // Auto-track function enter/exit for any named function
+        FunctionDeclaration(path: any) {
+          if (path.node.loc === null) return;
+          const fnName = path.node.id?.name ?? 'anonymous';
+          const body = path.node.body;
+          if (!body || !body.body) return;
+
+          // Build args array: [arg0, arg1, ...]
+          const argsArray = t.arrayExpression(
+            path.node.params.map((p: any) =>
+              t.isIdentifier(p) ? t.identifier(p.name) : t.stringLiteral('...')
+            )
+          );
+
+          // Inject __ll.funcEnter("fnName", [args]) at top of function
+          const enterCall = t.expressionStatement(
+            t.callExpression(
+              t.memberExpression(t.identifier('__ll'), t.identifier('funcEnter')),
+              [t.stringLiteral(fnName), argsArray]
+            )
+          );
+          enterCall.loc = null as any; // prevent re-processing
+          body.body.unshift(enterCall);
+        },
+
+        // Inject __ll.funcExit(returnValue) before every return statement
+        ReturnStatement(path: any) {
+          if (path.node.loc === null) return;
+          // Avoid injecting inside the injected funcEnter/funcExit calls themselves
+          const fnParent = path.getFunctionParent();
+          if (!fnParent || fnParent.node.loc === null) return;
+
+          const returnArg = path.node.argument ?? t.identifier('undefined');
+
+          // Save to a temp var so we don't double-evaluate the return expression
+          const tempId = path.scope.generateUidIdentifier('ret');
+          const tempDecl = t.variableDeclaration('const', [
+            t.variableDeclarator(tempId, returnArg),
+          ]);
+          tempDecl.loc = null as any;
+
+          const exitCall = t.expressionStatement(
+            t.callExpression(
+              t.memberExpression(t.identifier('__ll'), t.identifier('funcExit')),
+              [tempId]
+            )
+          );
+          exitCall.loc = null as any;
+
+          // Replace: return expr  →  const _ret = expr; __ll.funcExit(_ret); return _ret;
+          path.replaceWithMultiple([
+            tempDecl,
+            exitCall,
+            t.returnStatement(tempId),
+          ]);
+        },
+
         // Intercept new Map() and new Set() to return our tracked proxies
         NewExpression(path: any) {
           if (path.node.loc === null) return;

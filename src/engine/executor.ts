@@ -227,7 +227,7 @@ export async function executeCode(userCode: string, inputJson: string, language:
 
   const llApi = {
     array: (name: string, initial: unknown[]) => createTrackedArray(initial, name, emit),
-    map: (name: string, initialMap?: Map<unknown, unknown>) => createTrackedMap(initialMap ? name : name, emit), // Fallback map tracking for now
+    map: (name: string, initialMap?: Map<unknown, unknown>) => createTrackedMap(initialMap ? name : name, emit),
     set: (name: string, initialSet?: Set<unknown>) => createTrackedSet(initialSet ? name : name, emit),
     setVar: (name: string, value: unknown) => {
       emit({ type: 'VARIABLE_UPDATE', variable: name, value });
@@ -237,12 +237,27 @@ export async function executeCode(userCode: string, inputJson: string, language:
       emit({ type: 'COMPARISON', left: a, right: b, result });
       return result;
     },
-    note: (msg: string) => emit({ type: 'ANNOTATION', message: msg }),
+    note: (...args: unknown[]) => emit({ type: 'ANNOTATION', message: args.map(a => String(a)).join(' ') }),
     swap: (arr: unknown[], i: number, j: number, name = 'arr') => {
       const tmp = arr[i];
       arr[i] = arr[j];
       arr[j] = tmp;
       emit({ type: 'ARRAY_SWAP', array: name, index: i, indexB: j });
+    },
+    funcEnter: (name: string, args: unknown[]) => {
+      emit({ type: 'FUNCTION_ENTER', fn: name, args });
+    },
+    funcExit: (returnValue: unknown) => {
+      emit({ type: 'FUNCTION_EXIT', returnValue });
+    },
+    range: (arrayName: string, start: number, end: number, label?: string, depth?: number) => {
+      emit({ type: 'RANGE_HIGHLIGHT', array: arrayName, rangeStart: start, rangeEnd: end, label, depth });
+    },
+    split: (arrayName: string, start: number, end: number, label?: string, depth?: number) => {
+      emit({ type: 'ARRAY_SPLIT', array: arrayName, rangeStart: start, rangeEnd: end, label, depth });
+    },
+    merge: (arrayName: string, start: number, end: number) => {
+      emit({ type: 'ARRAY_MERGE', array: arrayName, rangeStart: start, rangeEnd: end });
     },
   };
 

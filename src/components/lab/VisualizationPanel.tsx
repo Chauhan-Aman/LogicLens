@@ -2,9 +2,30 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLabStore } from '@/store/labStore';
-import ArrayRenderer from '@/components/visualizers/ArrayRenderer';
+import SmartArrayCanvas from '@/components/visualizers/SmartArrayCanvas';
+import VariableChips from '@/components/visualizers/VariableChips';
+import ComparisonCallout from '@/components/visualizers/ComparisonCallout';
+import CallStackVisual from '@/components/visualizers/CallStackVisual';
 import HashMapRenderer from '@/components/visualizers/HashMapRenderer';
-import VariablePanel from '@/components/visualizers/VariablePanel';
+
+// Colour for the annotation banner based on event type
+function annotationStyle(type: string): string {
+  switch (type) {
+    case 'COMPARISON':     return 'from-red-500/15 to-orange-500/15 ring-red-500/25 text-red-200';
+    case 'ARRAY_SWAP':     return 'from-yellow-500/15 to-amber-500/15 ring-yellow-500/25 text-yellow-200';
+    case 'ARRAY_WRITE':    return 'from-emerald-500/15 to-teal-500/15 ring-emerald-500/25 text-emerald-200';
+    case 'ARRAY_ACCESS':   return 'from-amber-500/15 to-yellow-500/15 ring-amber-500/25 text-amber-200';
+    case 'VARIABLE_UPDATE':return 'from-cyan-500/15 to-blue-500/15 ring-cyan-500/25 text-cyan-200';
+    case 'MAP_INSERT':
+    case 'MAP_LOOKUP':     return 'from-pink-500/15 to-rose-500/15 ring-pink-500/25 text-pink-200';
+    case 'FUNCTION_ENTER':
+    case 'RECURSIVE_CALL': return 'from-violet-500/15 to-purple-500/15 ring-violet-500/25 text-violet-200';
+    case 'FUNCTION_EXIT':
+    case 'RECURSIVE_RETURN':return 'from-violet-500/10 to-indigo-500/10 ring-violet-500/20 text-violet-300';
+    case 'ANNOTATION':     return 'from-emerald-500/15 to-green-500/15 ring-emerald-500/25 text-emerald-200';
+    default:               return 'from-white/8 to-white/5 ring-white/10 text-white/70';
+  }
+}
 
 export default function VisualizationPanel() {
   const { timeline, currentStep, executionError } = useLabStore();
@@ -39,80 +60,126 @@ export default function VisualizationPanel() {
   const hasArrays = Object.keys(snap.arrays).length > 0;
   const hasMapsOrSets = Object.keys(snap.maps).length > 0 || Object.keys(snap.sets).length > 0;
   const hasVars = Object.keys(snap.variables).length > 0;
+  const hasStack = snap.callStack.length > 0;
 
-  // Extract pointer-like variables for the array renderer
+  // Determine which variable names are "pointers" (index-like integers used on an array)
+  const arrayNames = Object.keys(snap.arrays);
+  const pointerNames = Object.entries(snap.variables)
+    .filter(([, v]) => typeof v === 'number' && Number.isInteger(v as number) && (v as number) >= 0 && (v as number) < 10000)
+    .map(([k]) => k);
+
+  // Build per-array pointer map from variables
   const pointers: Record<string, number> = {};
   for (const [k, v] of Object.entries(snap.variables)) {
-    if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 1000) {
-      pointers[k] = v;
+    if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 10000) {
+      pointers[k] = v as number;
     }
   }
 
+  // Detect if this looks like a sorting scenario (for bar chart mode)
+  const isSortLike = arrayNames.some(n =>
+    snap.arrays[n].swapIndices !== undefined || (snap.event.type === 'ARRAY_SWAP')
+  );
+
+  const bannerStyle = annotationStyle(snap.event.type);
+
   return (
-    <div className="flex flex-col gap-0 h-full overflow-y-auto">
-      {/* Annotation banner */}
+    <div className="flex flex-col h-full overflow-y-auto">
+
+      {/* ─── Step Header ─── */}
+      <div className="flex items-center gap-3 px-4 pt-3 pb-2 border-b border-white/5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-mono text-white/25">Step</span>
+          <span className="text-xs font-mono text-white font-bold">{snap.step}</span>
+          <span className="text-[10px] font-mono text-white/25">/ {timeline.length - 1}</span>
+        </div>
+        <span className="text-white/10">·</span>
+        <span className="text-[10px] font-mono text-white/25">{snap.operationCount} ops</span>
+        {snap.recursiveDepth > 0 && (
+          <span className="ml-auto text-[9px] font-mono text-violet-400 bg-violet-500/15 px-2 py-0.5 rounded-full ring-1 ring-violet-500/30">
+            depth {snap.recursiveDepth}
+          </span>
+        )}
+      </div>
+
+      {/* ─── Annotation Banner ─── */}
       <AnimatePresence mode="wait">
         {snap.annotation && (
           <motion.div
             key={`ann-${snap.step}`}
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2 }}
-            className="mx-4 mt-4 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500/15 to-cyan-500/15 ring-1 ring-violet-500/25 text-sm text-white/80 font-mono"
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.18 }}
+            className={`mx-3 mt-3 px-4 py-2.5 rounded-xl bg-gradient-to-r ring-1 text-sm font-mono ${bannerStyle}`}
           >
             {snap.annotation}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Step counter */}
-      <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-        <span className="text-xs font-mono text-white/25">Step</span>
-        <span className="text-xs font-mono text-white/60 font-semibold">{snap.step}</span>
-        <span className="text-xs font-mono text-white/25">/ {timeline.length - 1}</span>
-        <span className="ml-auto text-xs font-mono text-white/25">
-          {snap.operationCount} ops
-        </span>
-      </div>
+      {/* ─── Comparison Callout (center stage) ─── */}
+      {snap.event.type === 'COMPARISON' && (
+        <div className="mx-3 mt-3">
+          <ComparisonCallout event={snap.event} />
+        </div>
+      )}
 
-      <div className="flex-1 p-4 space-y-5">
-        {/* Variables */}
-        {hasVars && (
-          <Section title="Variables" color="cyan">
-            <VariablePanel variables={snap.variables} />
-          </Section>
-        )}
+      <div className="flex-1 p-4 space-y-6">
 
-        {/* Arrays */}
+        {/* ─── Arrays ─── */}
         {hasArrays && (
           <Section title="Arrays" color="violet">
-            {Object.entries(snap.arrays).map(([name, state]) => (
-              <ArrayRenderer key={name} name={name} state={state} pointers={pointers} />
-            ))}
+            <div className="space-y-6">
+              {Object.entries(snap.arrays).map(([name, state]) => (
+                <SmartArrayCanvas
+                  key={name}
+                  name={name}
+                  state={state}
+                  pointers={pointers}
+                  showBarChart={isSortLike && state.values.every(v => typeof v === 'number')}
+                />
+              ))}
+            </div>
           </Section>
         )}
 
-        {/* Maps & Sets */}
+        {/* ─── Variables ─── */}
+        {hasVars && (
+          <Section title="Variables" color="cyan">
+            <VariableChips
+              variables={snap.variables}
+              changedVariable={snap.changedVariable}
+              pointerNames={pointerNames}
+            />
+          </Section>
+        )}
+
+        {/* ─── Comparison (detail) ─── */}
+        {snap.event.type === 'COMPARISON' && (
+          <Section title="Comparison" color="orange">
+            <div className="flex items-center gap-3 text-sm font-mono text-white/70">
+              <span className="text-white font-bold">{JSON.stringify(snap.event.left)}</span>
+              <span className="text-white/30">vs</span>
+              <span className="text-white font-bold">{JSON.stringify(snap.event.right)}</span>
+              <span className={`ml-auto font-bold ${snap.event.result ? 'text-emerald-400' : 'text-red-400'}`}>
+                {snap.event.result ? '= match' : '≠ diff'}
+              </span>
+            </div>
+          </Section>
+        )}
+
+        {/* ─── Call Stack ─── */}
+        {hasStack && (
+          <Section title="Call Stack" color="violet">
+            <CallStackVisual frames={snap.callStack} />
+          </Section>
+        )}
+
+        {/* ─── Maps & Sets ─── */}
         {hasMapsOrSets && (
           <Section title="Maps & Sets" color="pink">
             <HashMapRenderer maps={snap.maps} sets={snap.sets} />
-          </Section>
-        )}
-
-        {/* Call stack */}
-        {snap.callStack.length > 0 && (
-          <Section title="Call Stack" color="yellow">
-            <div className="space-y-1">
-              {[...snap.callStack].reverse().map((frame, i) => (
-                <div
-                  key={i}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 ring-1 ring-white/10 text-xs font-mono text-white/60"
-                >
-                  {frame.name}({frame.args.map(a => JSON.stringify(a)).join(', ')})
-                </div>
-              ))}
-            </div>
           </Section>
         )}
       </div>
@@ -126,18 +193,19 @@ function Section({
   children,
 }: {
   title: string;
-  color: 'cyan' | 'violet' | 'pink' | 'yellow';
+  color: 'cyan' | 'violet' | 'pink' | 'yellow' | 'orange';
   children: React.ReactNode;
 }) {
-  const colors = {
+  const colors: Record<string, string> = {
     cyan:   'text-cyan-400 border-cyan-500/30',
     violet: 'text-violet-400 border-violet-500/30',
     pink:   'text-pink-400 border-pink-500/30',
     yellow: 'text-yellow-400 border-yellow-500/30',
+    orange: 'text-orange-400 border-orange-500/30',
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className={`flex items-center gap-2 pb-1.5 border-b ${colors[color]}`}>
         <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${colors[color]}`}>
           {title}
