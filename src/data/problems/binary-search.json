@@ -19,7 +19,7 @@
       "name": "Binary Search",
       "complexity": { "time": "O(log n)", "space": "O(1)" },
       "language": "cpp",
-      "code": "// Binary Search C++ — O(log n)\nint left = 0;\nint right = nums.size() - 1;\n\nwhile (left <= right) {\n  int mid = left + (right - left) / 2;\n  int midVal = nums[mid];\n  \n  if (midVal == target) {\n    __ll_note(\"Found target at index \" + __ll_to_json(mid));\n    return 0;\n  } else if (midVal < target) {\n    __ll_note(\"midVal < target, search right half\");\n    left = mid + 1;\n  } else {\n    __ll_note(\"midVal > target, search left half\");\n    right = mid - 1;\n  }\n}\nreturn 0;"
+      "code": "// Binary Search C++ — O(log n)\nint left = 0;\nint right = nums.size() - 1;\n\nwhile (left <= right) {\n  int mid = left + (right - left) / 2;\n  int midVal = nums[mid];\n  \n  if (midVal == target) {\n    cout << \"Found target at index \" << mid << endl;\n    return 0;\n  } else if (midVal < target) {\n    cout << \"midVal < target, search right half\" << endl;\n    left = mid + 1;\n  } else {\n    cout << \"midVal > target, search left half\" << endl;\n    right = mid - 1;\n  }\n}\nreturn 0;"
     }
   ],
   "structures": ["array"],
