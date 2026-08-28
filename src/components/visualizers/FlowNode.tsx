@@ -2,6 +2,7 @@
 
 import type { StateSnapshot } from '@/engine/events';
 import { motion } from 'framer-motion';
+import { RefreshCcw, GitBranch, Variable, ArrowRightLeft, FunctionSquare, Globe, CheckCircle2, Code2, Database } from 'lucide-react';
 
 interface FlowNodeProps {
   snap: StateSnapshot;
@@ -10,85 +11,99 @@ interface FlowNodeProps {
 }
 
 export default function FlowNode({ snap, isActive, onClick }: FlowNodeProps) {
-  // Compress array view to tiny blocks
-  const firstArrayName = Object.keys(snap.arrays)[0];
-  const firstArray = firstArrayName ? snap.arrays[firstArrayName] : null;
-  const isCall = snap.event.type === 'FUNCTION_ENTER' || snap.event.type === 'RECURSIVE_CALL';
-  const isRet = snap.event.type === 'FUNCTION_EXIT' || snap.event.type === 'RECURSIVE_RETURN';
-
-  let borderColor = 'border-white/10';
-  let bgColor = 'bg-black/60';
-  if (snap.event.type === 'COMPARISON') borderColor = 'border-orange-500/50';
-  if (snap.event.type === 'ARRAY_SWAP') borderColor = 'border-yellow-500/50';
-  if (isCall || isRet) borderColor = 'border-violet-500/50';
-  if (snap.event.type === 'VARIABLE_UPDATE') borderColor = 'border-cyan-500/50';
+  const type = snap.event.type;
   
-  if (isActive) {
-    bgColor = 'bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.2)] ring-1 ring-white/50';
+  let title = 'Execution Step';
+  let subtitle = '';
+  let Icon = Code2;
+  let borderColor = 'border-white/10';
+  let iconColor = 'text-white/40';
+
+  if (type === 'BLOCK_ENTER') {
+    if (snap.event.blockType === 'loop') {
+      title = `Loop (${snap.event.blockLabel})`;
+      subtitle = 'Start Loop block';
+      Icon = RefreshCcw;
+      borderColor = 'border-blue-500/30';
+      iconColor = 'text-blue-400';
+    } else {
+      title = `Iteration`;
+      subtitle = 'Next loop cycle';
+      Icon = RefreshCcw;
+      borderColor = 'border-indigo-500/30';
+      iconColor = 'text-indigo-400';
+    }
+  } else if (type === 'COMPARISON') {
+    title = 'Condition Match';
+    subtitle = `${JSON.stringify(snap.event.left)} ${snap.event.result ? '==' : '!='} ${JSON.stringify(snap.event.right)}`;
+    Icon = GitBranch;
+    borderColor = snap.event.result ? 'border-emerald-500/40' : 'border-red-500/30';
+    iconColor = snap.event.result ? 'text-emerald-400' : 'text-red-400';
+  } else if (type === 'VARIABLE_UPDATE') {
+    title = 'Variable Assignment';
+    subtitle = `${snap.event.variable} = ${JSON.stringify(snap.event.value)}`;
+    Icon = Variable;
+    borderColor = 'border-amber-500/30';
+    iconColor = 'text-amber-400';
+  } else if (type === 'ARRAY_SWAP') {
+    title = 'Array Swap';
+    subtitle = `Swap indices [${snap.event.index}] and [${snap.event.indexB}]`;
+    Icon = ArrowRightLeft;
+    borderColor = 'border-orange-500/30';
+    iconColor = 'text-orange-400';
+  } else if (type === 'FUNCTION_ENTER') {
+    title = `Callable`;
+    subtitle = `${snap.event.fn}() executed`;
+    Icon = FunctionSquare;
+    borderColor = 'border-purple-500/30';
+    iconColor = 'text-purple-400';
+  } else if (type === 'MAP_INSERT' || type === 'MAP_DELETE') {
+    title = 'Storage';
+    subtitle = `Key: ${snap.event.key}`;
+    Icon = Database;
+    borderColor = 'border-teal-500/30';
+    iconColor = 'text-teal-400';
+  } else {
+    title = type.replace('_', ' ');
+    Icon = Globe;
   }
 
-  // Find scalar variables to show briefly
-  const scalarVars = Object.entries(snap.variables)
-    .filter(([, v]) => typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string')
-    .slice(0, 3); // max 3 to keep it compressed
+  // Active state styling
+  const activeStyles = isActive 
+    ? 'ring-2 ring-white/50 shadow-[0_0_20px_rgba(255,255,255,0.1)] bg-white/[0.05]' 
+    : 'bg-[#111115] hover:bg-white/[0.03]';
 
   return (
     <motion.div
       onClick={onClick}
-      className={`w-40 rounded-lg border ${borderColor} ${bgColor} overflow-hidden flex flex-col cursor-pointer hover:border-white/40 transition-colors backdrop-blur-md`}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      className={`relative w-[320px] rounded-lg border ${borderColor} ${activeStyles} p-4 flex items-center justify-between cursor-pointer transition-all duration-200`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-2 py-1 bg-white/[0.03] border-b border-white/5">
-        <span className="text-[9px] font-mono font-bold text-white/50">#{snap.step}</span>
-        <span className="text-[8px] font-mono uppercase text-white/40 truncate max-w-[80px]">
-          {snap.event.type.replace('ARRAY_', '').replace('VARIABLE_', '')}
-        </span>
+      {/* Step badge top-left corner */}
+      <div className="absolute -top-2.5 -left-2.5 w-6 h-6 rounded-md bg-[#1a1a20] border border-white/10 flex items-center justify-center text-[10px] font-mono font-bold text-white/50 z-10 shadow-lg">
+        {snap.step}
       </div>
 
-      <div className="p-2 flex flex-col gap-1.5">
-        {/* Compressed Array View */}
-        {firstArray && (
-          <div className="flex flex-wrap gap-0.5 justify-center">
-            {firstArray.values.map((v, i) => (
-              <div 
-                key={i} 
-                className={`w-3 h-3 flex items-center justify-center text-[7px] font-mono rounded-sm
-                  ${firstArray.highlights.includes(i) || firstArray.swapIndices?.includes(i)
-                    ? 'bg-white text-black font-bold' 
-                    : 'bg-white/10 text-white/70'}`}
-              >
-                {String(v).substring(0, 2)}
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="flex items-center gap-4">
+        {/* Left Icon Area */}
+        <div className={`w-10 h-10 rounded-md bg-white/[0.03] flex items-center justify-center border border-white/5 ${iconColor}`}>
+          <Icon size={18} strokeWidth={2} />
+        </div>
 
-        {/* Compressed Variables View */}
-        {scalarVars.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-0.5 justify-center">
-            {scalarVars.map(([k, v]) => (
-              <div key={k} className="text-[8px] font-mono flex items-center gap-0.5">
-                <span className="text-white/30">{k}:</span>
-                <span className="text-white/80">{String(v)}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Text Content */}
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold text-white/90">{title}</span>
+          <span className="text-xs font-mono text-white/50 mt-0.5 max-w-[180px] truncate">{subtitle}</span>
+        </div>
+      </div>
 
-        {/* Event detail */}
-        {snap.event.type === 'COMPARISON' && (
-          <div className={`text-[8px] font-mono text-center font-bold px-1 py-0.5 rounded ${snap.event.result ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
-            {JSON.stringify(snap.event.left)} {snap.event.result ? '==' : '!='} {JSON.stringify(snap.event.right)}
-          </div>
-        )}
-        
-        {isCall && snap.event.fn && (
-          <div className="text-[8px] font-mono text-center text-violet-300 bg-violet-500/10 px-1 py-0.5 rounded truncate">
-            {snap.event.fn}()
-          </div>
+      {/* Right Status */}
+      <div className="flex flex-col items-center justify-center h-full text-emerald-500/80">
+        {(type === 'COMPARISON' && snap.event.result) || type === 'BLOCK_ENTER' || type === 'FUNCTION_ENTER' ? (
+           <CheckCircle2 size={16} />
+        ) : (
+           <div className="w-4 h-4 rounded-full border border-white/10" />
         )}
       </div>
     </motion.div>

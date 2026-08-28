@@ -1,83 +1,44 @@
 'use client';
 
 import { useLabStore } from '@/store/labStore';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import FlowNode from './FlowNode';
-import type { StateSnapshot } from '@/engine/events';
-import { ArrowRight } from 'lucide-react';
-
-interface ExecutionNode {
-  id: string;
-  type: 'function' | 'loop' | 'iteration' | 'step';
-  label?: string;
-  children: ExecutionNode[];
-  snapshots: StateSnapshot[];
-}
-
-function buildExecutionTree(timeline: StateSnapshot[]): ExecutionNode {
-  const root: ExecutionNode = { id: 'root', type: 'function', label: 'Program', children: [], snapshots: [] };
-  const stack = [root];
-
-  for (const snap of timeline) {
-    const currentBlock = stack[stack.length - 1];
-
-    if (snap.event.type === 'FUNCTION_ENTER') {
-      const fnNode: ExecutionNode = { 
-        id: `fn-${snap.step}`, 
-        type: 'function', 
-        label: `${snap.event.fn}()`, 
-        children: [], 
-        snapshots: [] 
-      };
-      currentBlock.children.push(fnNode);
-      stack.push(fnNode);
-    } else if (snap.event.type === 'FUNCTION_EXIT') {
-      // auto-close any unclosed loops/iterations in this function
-      while (stack.length > 1 && stack[stack.length - 1].type !== 'function') {
-        stack.pop();
-      }
-      if (stack.length > 1) stack.pop(); // pop the function itself
-    } else if (snap.event.type === 'BLOCK_ENTER') {
-      // If we see an 'iteration', auto-close the previous 'iteration' if it wasn't closed (e.g. continue)
-      if (snap.event.blockType === 'iteration' && currentBlock.type === 'iteration') {
-        stack.pop();
-      }
-
-      const blockNode: ExecutionNode = { 
-        id: `block-${snap.step}`, 
-        type: (snap.event.blockType as any) || 'loop', 
-        label: snap.event.blockLabel, 
-        children: [], 
-        snapshots: [] 
-      };
-      stack[stack.length - 1].children.push(blockNode);
-      stack.push(blockNode);
-    } else if (snap.event.type === 'BLOCK_EXIT') {
-      // Don't pop if we are at root or function
-      if (stack.length > 1 && stack[stack.length - 1].type !== 'function') {
-        stack.pop();
-      }
-    } else {
-      // It's a standard step (VARIABLE_UPDATE, COMPARISON, etc.)
-      // Skip pure variable updates unless it's a very short trace
-      if (timeline.length > 15 && (snap.event.type === 'VARIABLE_UPDATE' || snap.event.type === 'ANNOTATION')) {
-        continue;
-      }
-      currentBlock.children.push({
-        id: `step-${snap.step}`,
-        type: 'step',
-        snapshots: [snap],
-        children: []
-      });
-    }
-  }
-  
-  return root;
-}
+import { Plus } from 'lucide-react';
 
 export default function FlowGraph() {
   const { timeline, currentStep, setCurrentStep } = useLabStore();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
+
+  // Filter out pure variable updates to keep the graph readable, unless very short trace.
+  const nodes = timeline.length < 15 
+    ? timeline 
+    : timeline.filter(s => 
+        s.event.type !== 'VARIABLE_UPDATE' && 
+        s.event.type !== 'ANNOTATION' &&
+        s.event.type !== 'BLOCK_EXIT' &&
+        s.event.type !== 'FUNCTION_EXIT'
+      );
+
+  // Auto-scroll logic (only vertically in this unrolled list)
+  useEffect(() => {
+    if (containerRef.current) {
+      const activeEl = containerRef.current.querySelector('.node-active');
+      if (activeEl) {
+        // Adjust scroll position to center the active node vertically
+        const container = containerRef.current;
+        const scrollTarget = (activeEl as HTMLElement).offsetTop - (container.clientHeight / 2) + 100;
+        
+        container.scrollTo({
+          top: Math.max(0, scrollTarget),
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [currentStep]);
 
   if (timeline.length === 0) {
     return (
@@ -87,98 +48,83 @@ export default function FlowGraph() {
     );
   }
 
-  const tree = buildExecutionTree(timeline);
-
-  // Auto-scroll to active node
-  useEffect(() => {
-    if (containerRef.current) {
-      const activeEl = containerRef.current.querySelector('.node-active');
-      if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-      }
-    }
-  }, [currentStep]);
-
   return (
-    <div ref={containerRef} className="w-full h-full bg-[#050508] overflow-auto p-8 relative">
-       {/* Background pattern */}
-      <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-      
-      <div className="relative">
-        {/* Skip the dummy 'Program' root if it only has one actual function child */}
-        {tree.children.length === 1 && tree.children[0].type === 'function' 
-          ? <ExecutionBlock node={tree.children[0]} currentStep={currentStep} onStepClick={setCurrentStep} />
-          : <ExecutionBlock node={tree} currentStep={currentStep} onStepClick={setCurrentStep} />
+    <div 
+      ref={containerRef}
+      className="relative w-full h-full bg-[#050508] overflow-auto select-none p-12"
+      onWheel={(e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+          setScale(s => Math.min(Math.max(s * zoomFactor, 0.4), 2));
         }
-      </div>
-    </div>
-  );
-}
+      }}
+    >
+      {/* Subtle Dot Grid Background matching screenshot */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-[0.15] z-0" 
+        style={{ 
+          backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', 
+          backgroundSize: '20px 20px',
+          minHeight: '200%' // Ensure pattern covers scrolling
+        }} 
+      />
 
-function ExecutionBlock({ 
-  node, 
-  currentStep, 
-  onStepClick 
-}: { 
-  node: ExecutionNode; 
-  currentStep: number; 
-  onStepClick: (step: number) => void; 
-}) {
-  if (node.type === 'step' && node.snapshots.length > 0) {
-    const snap = node.snapshots[0];
-    const isActive = snap.step === currentStep;
-    return (
-      <div className={`shrink-0 ${isActive ? 'node-active' : ''}`}>
-        <FlowNode 
-          snap={snap} 
-          isActive={isActive} 
-          onClick={() => onStepClick(snap.step)}
-        />
-      </div>
-    );
-  }
+      <div 
+        className="relative flex flex-col items-center gap-0 z-10 w-full min-h-max pb-32 origin-top"
+        style={{ transform: `scale(${scale})` }}
+      >
+        {/* Starting Trigger Node */}
+        <div className="px-4 py-1.5 border border-emerald-500/30 text-emerald-400 text-xs font-semibold rounded bg-emerald-500/10 mb-8 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+          Trigger Run
+        </div>
 
-  // Filter out empty container blocks
-  const validChildren = node.children.filter(c => c.type !== 'step' || c.snapshots.length > 0);
-  if (validChildren.length === 0) return null;
+        {nodes.map((snap, index) => {
+          const isActive = currentStep === snap.step;
+          const isLast = index === nodes.length - 1;
 
-  let borderColor = 'border-white/10';
-  let bgColor = 'bg-white/[0.02]';
-  let labelColor = 'text-white/40';
+          return (
+            <div key={snap.step} className="flex flex-col items-center">
+              {/* Vertical connecting line from above */}
+              <div className="w-[1px] h-6 bg-white/10" />
+              
+              {/* The "+" button exactly like UnifyApps */}
+              <div className="w-4 h-4 rounded-sm border border-white/20 bg-[#0a0a0f] flex items-center justify-center text-white/40 mb-1 z-10 cursor-pointer hover:bg-white/10 hover:text-white transition-colors">
+                <Plus size={10} />
+              </div>
+              
+              <div className="w-[1px] h-6 bg-white/10" />
 
-  if (node.type === 'function') {
-    borderColor = 'border-violet-500/30';
-    bgColor = 'bg-violet-500/[0.02]';
-    labelColor = 'text-violet-300';
-  } else if (node.type === 'loop') {
-    borderColor = 'border-cyan-500/30';
-    bgColor = 'bg-cyan-500/[0.02]';
-    labelColor = 'text-cyan-300';
-  } else if (node.type === 'iteration') {
-    borderColor = 'border-white/5';
-    bgColor = 'bg-transparent';
-    labelColor = 'text-white/20';
-  }
+              {/* The Node Card */}
+              <div className={`shrink-0 ${isActive ? 'node-active' : ''}`}>
+                <FlowNode 
+                  snap={snap} 
+                  isActive={isActive} 
+                  onClick={() => setCurrentStep(snap.step)}
+                />
+              </div>
+            </div>
+          );
+        })}
 
-  const isVertical = node.type === 'function' || node.type === 'loop';
-
-  return (
-    <div className={`relative flex flex-col p-4 rounded-xl border ${borderColor} ${bgColor} min-w-min`}>
-      <div className={`absolute -top-3 left-4 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-widest bg-[#0a0a0f] border ${borderColor} ${labelColor}`}>
-        {node.type} {node.label ? `— ${node.label}` : ''}
-      </div>
-
-      <div className={`mt-2 flex ${isVertical ? 'flex-col gap-6' : 'flex-row flex-wrap gap-4 items-center'}`}>
-        {validChildren.map((child, i) => (
-          <div key={child.id} className="flex items-center gap-4">
-            <ExecutionBlock node={child} currentStep={currentStep} onStepClick={onStepClick} />
-            
-            {/* Draw arrow to next sibling if horizontal layout (iterations) */}
-            {!isVertical && i < validChildren.length - 1 && (
-              <ArrowRight size={14} className="text-white/10 shrink-0" />
-            )}
+        {/* Final End Node */}
+        <div className="flex flex-col items-center mt-0">
+          <div className="w-[1px] h-6 bg-white/10" />
+          <div className="w-4 h-4 rounded-sm border border-white/20 bg-[#0a0a0f] flex items-center justify-center text-white/40 mb-1 z-10 cursor-pointer hover:bg-white/10">
+            <Plus size={10} />
           </div>
-        ))}
+          <div className="w-[1px] h-6 bg-white/10" />
+          <div className="w-12 h-8 border border-white/20 border-dashed rounded flex items-center justify-center text-white/30 text-lg bg-[#0a0a0f]">
+            +
+          </div>
+        </div>
+      </div>
+
+      {/* Controls overlay */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-2 bg-black/50 p-2 rounded-lg border border-white/10 backdrop-blur-md z-50">
+        <button className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" onClick={() => setScale(s => Math.min(s * 1.2, 2))}>+</button>
+        <button className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" onClick={() => setScale(s => Math.max(s * 0.8, 0.4))}>-</button>
+        <button className="text-[10px] font-mono text-white/50 hover:text-white mt-1" onClick={() => setScale(1)}>1:1</button>
       </div>
     </div>
   );
