@@ -348,31 +348,32 @@ export default function FlowGraph() {
   const { timeline, currentStep, setCurrentStep } = useLabStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Only allow drag if clicking on the background, not on a node
     if ((e.target as HTMLElement).closest('.z-10')) return;
     setIsDragging(true);
-    if (containerRef.current) {
-      dragStart.current = {
-        x: e.clientX,
-        y: e.clientY,
-        scrollLeft: containerRef.current.scrollLeft,
-        scrollTop: containerRef.current.scrollTop
-      };
-    }
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panX: pan.x,
+      panY: pan.y
+    };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
+    if (!isDragging) return;
     e.preventDefault(); // Prevent text selection
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    containerRef.current.scrollLeft = dragStart.current.scrollLeft - dx;
-    containerRef.current.scrollTop = dragStart.current.scrollTop - dy;
+    setPan({
+      x: dragStart.current.panX + dx,
+      y: dragStart.current.panY + dy,
+    });
   };
 
   const handleMouseUp = () => setIsDragging(false);
@@ -392,17 +393,20 @@ export default function FlowGraph() {
 
   const tree = useMemo(() => buildExecutionTree(processedTimeline), [processedTimeline]);
 
-  // Auto-scroll logic
+  // Auto-scroll logic (via pan)
   useEffect(() => {
     if (containerRef.current) {
       const activeEl = containerRef.current.querySelector('.node-active');
       if (activeEl) {
         const container = containerRef.current;
-        const scrollTarget = (activeEl as HTMLElement).offsetTop - (container.clientHeight / 2) + 100;
-        container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+        // offsetTop is in unscaled document space relative to origin-top flex container
+        const targetY = (activeEl as HTMLElement).offsetTop * scale;
+        const centerOffset = container.clientHeight / 2;
+        // Adjust pan to center the active element vertically
+        setPan(prev => ({ ...prev, y: Math.min(0, centerOffset - targetY - 100) }));
       }
     }
-  }, [currentStep]);
+  }, [currentStep, scale]);
 
   if (timeline.length === 0) {
     return (
@@ -415,7 +419,7 @@ export default function FlowGraph() {
   return (
     <div 
       ref={containerRef}
-      className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'relative w-full h-full'} bg-[#050508] overflow-auto select-none p-12 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+      className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'relative w-full h-full'} bg-[#050508] overflow-hidden select-none p-12 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       onWheel={(e) => {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
@@ -430,12 +434,16 @@ export default function FlowGraph() {
     >
       <div 
         className="absolute inset-0 pointer-events-none opacity-[0.15] z-0" 
-        style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px', minHeight: '200%' }} 
+        style={{ 
+          backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', 
+          backgroundSize: `${20 * scale}px ${20 * scale}px`,
+          backgroundPosition: `${pan.x}px ${pan.y}px`
+        }} 
       />
 
       <div 
-        className="relative flex flex-col items-center gap-0 z-10 w-full min-h-max pb-32 origin-top"
-        style={{ transform: `scale(${scale})` }}
+        className="relative flex flex-col items-center gap-0 z-10 w-full min-h-max origin-center transition-transform duration-75"
+        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}
       >
         <div className="px-4 py-1.5 border border-emerald-500/30 text-emerald-400 text-xs font-semibold rounded bg-emerald-500/10 mb-2 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
           Trigger Run
