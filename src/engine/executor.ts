@@ -163,11 +163,12 @@ export interface ExecutionResult {
 
 /**
  * Execute user code in a controlled sandbox and collect events.
- * Executes the user's code inside a sandboxed environment.
+ * Executes the user's code inside a sandboxed environment, or sends it to the API for C++.
  * @param userCode The raw code from the editor
  * @param inputJson The raw JSON string from the input panel
+ * @param language The programming language ('javascript' or 'cpp')
  */
-export function executeCode(userCode: string, inputJson: string): ExecutionResult {
+export async function executeCode(userCode: string, inputJson: string, language: string = 'javascript'): Promise<ExecutionResult> {
   const events: ExecutionEvent[] = [];
   let stepCount = 0;
   const emit = (e: ExecutionEvent) => {
@@ -176,6 +177,27 @@ export function executeCode(userCode: string, inputJson: string): ExecutionResul
       stepCount++;
     }
   };
+
+  if (language === 'cpp') {
+    try {
+      const response = await fetch('/api/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: userCode, input: inputJson, language: 'cpp' }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        return { events: [], error: data.error || 'Execution failed', returnValue: undefined, stepCount: 0 };
+      }
+
+      const receivedEvents = data.events || [];
+      return { events: receivedEvents, error: undefined, returnValue: undefined, stepCount: receivedEvents.length };
+    } catch (e: any) {
+      return { events: [], error: e.message, returnValue: undefined, stepCount: 0 };
+    }
+  }
 
   let input: any;
   try {

@@ -37,42 +37,41 @@ export default function CodeEditor() {
     setUserCode,
     inputJson,
     setInputJson,
-    setTimeline,
     setDetection,
     setExecutionError,
     activeProblem,
+    activeLanguage,
+    setActiveLanguage,
   } = useLabStore();
 
   const [isRunning, setIsRunning] = useState(false);
 
-  const run = useCallback(() => {
+  const run = useCallback(async () => {
     if (!userCode.trim()) return;
     setIsRunning(true);
     setExecutionError(null);
 
-    setTimeout(() => {
-      try {
-        // Detect structures
-        const detection = detectStructures(userCode);
-        setDetection(detection);
+    try {
+      // Detect structures
+      const detection = detectStructures(userCode);
+      setDetection(detection);
 
-        // Execute
-        const result = executeCode(userCode, inputJson);
+      // Execute
+      const result = await executeCode(userCode, inputJson, activeLanguage);
 
-        if (result.error) {
-          setExecutionError(result.error);
-          setTimeline([]);
-        } else {
-          const timeline = buildTimeline(result.events);
-          setTimeline(timeline);
-        }
-      } catch (e) {
-        setExecutionError(e instanceof Error ? e.message : String(e));
-      } finally {
-        setIsRunning(false);
+      if (result.error) {
+        setExecutionError(result.error);
+        setTimeline([]);
+      } else {
+        const timeline = buildTimeline(result.events);
+        setTimeline(timeline);
       }
-    }, 0);
-  }, [userCode, inputJson, setTimeline, setDetection, setExecutionError]);
+    } catch (e) {
+      setExecutionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsRunning(false);
+    }
+  }, [userCode, inputJson, activeLanguage, setTimeline, setDetection, setExecutionError]);
 
   function handleEditorMount(editor: unknown, monaco: unknown) {
     // Register custom dark theme
@@ -109,10 +108,13 @@ export default function CodeEditor() {
           <span className="ml-2 text-xs font-mono text-white/30">
             {activeProblem?.title ?? 'Untitled'}
           </span>
-          <select className="ml-2 bg-black/40 border border-white/10 text-white/70 text-xs rounded px-2 py-0.5 outline-none focus:border-white/30">
+          <select 
+            value={activeLanguage}
+            onChange={(e) => setActiveLanguage(e.target.value)}
+            className="ml-2 bg-black/40 border border-white/10 text-white/70 text-xs rounded px-2 py-0.5 outline-none focus:border-white/30"
+          >
             <option value="javascript">JavaScript</option>
-            <option value="cpp" disabled>C++ (Coming in Phase 6)</option>
-            <option value="python" disabled>Python (Coming later)</option>
+            <option value="cpp">C++</option>
           </select>
         </div>
 
@@ -142,7 +144,7 @@ export default function CodeEditor() {
       <div className="flex-1 min-h-0">
         <MonacoEditor
           height="100%"
-          language="javascript"
+          language={activeLanguage === 'cpp' ? 'cpp' : 'javascript'}
           value={userCode}
           onChange={(v) => setUserCode(v ?? '')}
           options={MONACO_OPTIONS}

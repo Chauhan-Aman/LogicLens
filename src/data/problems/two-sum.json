@@ -20,6 +20,12 @@
       "complexity": { "time": "O(n)", "space": "O(n)" },
       "language": "javascript",
       "code": "// HashMap — O(n)\nlet map = new Map();\n\nfor (let i = 0; i < nums.length; i++) {\n  let num = nums[i];\n  let complement = target - num;\n  if (map.has(complement)) {\n    console.log(`Found complement ${complement} at index ${map.get(complement)}!`);\n    return [map.get(complement), i];\n  }\n  map.set(num, i);\n}"
+    },
+    {
+      "name": "C++ Brute Force",
+      "complexity": { "time": "O(n²)", "space": "O(1)" },
+      "language": "cpp",
+      "code": "// Brute Force C++ — O(n²)\nfor (int i = 0; i < nums.size(); i++) {\n  for (int j = i + 1; j < nums.size(); j++) {\n    int sum = nums[i] + nums[j];\n    if (sum == target) {\n      __ll_note(\"Found match!\");\n      return 0;\n    }\n  }\n}"
     }
   ],
   "structures": ["array", "hashmap"],

@@ -33,6 +33,8 @@ interface LabState {
   setUserCode: (code: string) => void;
   inputJson: string;
   setInputJson: (json: string) => void;
+  activeLanguage: string;
+  setActiveLanguage: (lang: string) => void;
 
   // Execution
   timeline: StateSnapshot[];
@@ -61,6 +63,8 @@ export const useLabStore = create<LabState>((set) => ({
   setUserCode: (code) => set({ userCode: code }),
   inputJson: '{}',
   setInputJson: (json) => set({ inputJson: json }),
+  activeLanguage: 'javascript',
+  setActiveLanguage: (lang) => set({ activeLanguage: lang }),
 
   timeline: [],
   setTimeline: (t) => set({ timeline: t, currentStep: 0 }),
