@@ -184,7 +184,7 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
   // Check if any child step is currently active
   const isActive = React.useMemo(() => {
     const checkActive = (n: ExecutionNode): boolean => {
-      if (n.snapshots.some(s => s.step === currentStep)) return true;
+      if (n.snapshots.some(s => s && (s as any).event && s.step === currentStep)) return true;
       return n.children.some(checkActive);
     };
     return checkActive(node);
@@ -195,6 +195,56 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
   useEffect(() => {
     if (isActive) setIsExpanded(true);
   }, [isActive]);
+
+  let childrenToRender: React.ReactNode[] = [];
+  if (node.children.length <= 6) {
+    childrenToRender = node.children.map(child => (
+      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
+    ));
+  } else {
+    // Find active index
+    const activeIndex = node.children.findIndex(c => {
+      const checkActive = (n: ExecutionNode): boolean => {
+        if (n.snapshots.some(s => s && (s as any).event && s.step === currentStep)) return true;
+        return n.children.some(checkActive);
+      };
+      return checkActive(c);
+    });
+
+    const renderNode = (child: ExecutionNode) => (
+      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
+    );
+
+    const renderPlaceholder = (count: number, key: string) => (
+      <div key={key} className="flex flex-col items-center my-2 opacity-50">
+        <div className="w-[1px] h-4 bg-white/10" />
+        <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-white/50 flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+          {count} iterations skipped
+          <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+        </div>
+        <div className="w-[1px] h-4 bg-white/10" />
+      </div>
+    );
+
+    const showIndices = new Set([0, 1, node.children.length - 1]);
+    if (activeIndex !== -1) {
+      showIndices.add(activeIndex - 1);
+      showIndices.add(activeIndex);
+      showIndices.add(activeIndex + 1);
+    }
+    
+    const validIndices = Array.from(showIndices).filter(i => i >= 0 && i < node.children.length).sort((a,b) => a-b);
+    
+    let lastIndex = -1;
+    for (const i of validIndices) {
+      if (i > lastIndex + 1) {
+        childrenToRender.push(renderPlaceholder(i - lastIndex - 1, `skip-${lastIndex}-${i}`));
+      }
+      childrenToRender.push(renderNode(node.children[i]));
+      lastIndex = i;
+    }
+  }
 
   const borderColor = isActive ? 'border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)] bg-blue-500/10' : 'border-white/20 bg-[#0a0a0f] hover:border-white/40';
 
@@ -218,9 +268,10 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
             exit={{ height: 0, opacity: 0 }}
             className="flex flex-col items-center overflow-hidden w-full"
           >
-            {node.children.map(child => (
-              <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
-            ))}
+            <div className="w-[1px] h-4 bg-blue-500/30" />
+            <div className="flex flex-col items-center w-full border-l border-blue-500/30 ml-[340px] -translate-x-[170px] pl-6 py-2 bg-blue-500/[0.02] rounded-r-2xl">
+              {childrenToRender}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
