@@ -144,7 +144,7 @@ function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: Exe
   const borderColor = isActive ? 'border-indigo-500 ring-1 ring-indigo-500/50 bg-indigo-500/10' : 'border-white/10 bg-[#111115] hover:border-white/20';
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full relative">
       <div className="w-[1px] h-4 bg-white/10" />
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
@@ -168,20 +168,19 @@ function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: Exe
       <AnimatePresence>
         {isExpanded && (
           <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="flex flex-col items-center w-full"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            className="absolute left-[50%] ml-[170px] top-4 flex items-start z-0"
           >
-            <div className="w-[1px] h-4 bg-white/10" />
-            <div className="w-full flex flex-col items-center relative pb-2">
-              <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-white/10 -translate-x-1/2" />
-              <div className="relative z-10 w-full flex flex-col items-center gap-1">
-                {node.children
-                  .map(child => (
-                    <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
-                ))}
-              </div>
+            {/* Horizontal branch line */}
+            <div className="w-8 h-[1px] bg-indigo-500/30 mt-[22px]" />
+            
+            {/* Children container with vertical spine */}
+            <div className="flex flex-col items-center relative border-l border-indigo-500/30 pl-6 py-2 bg-indigo-500/[0.02] rounded-r-2xl border-t border-b min-w-[300px]">
+              {node.children.map(child => (
+                 <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
+              ))}
             </div>
           </motion.div>
         )}
