@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, ChevronLeft, ChevronRight, Layers, BookOpen, Cpu, GitBranch } from 'lucide-react';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import CodeEditor from '@/components/lab/CodeEditor';
 import ProblemPanel from '@/components/lab/ProblemPanel';
 import RightPanel from '@/components/lab/RightPanel';
@@ -67,7 +68,7 @@ export default function LabPage() {
             {/* Logo */}
             <div className="px-4 py-4 border-b border-white/8">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold">
+                <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-black text-xs font-bold">
                   LL
                 </div>
                 <div>
@@ -86,7 +87,7 @@ export default function LabPage() {
                   placeholder="Search problems..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 bg-white/5 rounded-lg text-xs font-mono text-white/70 placeholder-white/20 border border-white/8 focus:outline-none focus:border-cyan-500/50 focus:bg-white/8 transition-all"
+                  className="w-full pl-8 pr-3 py-2 bg-white/5 rounded-lg text-xs font-mono text-white/70 placeholder-white/20 border border-white/8 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all"
                 />
               </div>
 
@@ -160,15 +161,15 @@ export default function LabPage() {
             </div>
             {detection && (
               <div className="flex items-center gap-1.5 ml-2 pl-3 border-l border-white/10">
-                <Cpu size={11} className="text-violet-400" />
+                <Cpu size={11} className="text-white/50" />
                 <div className="flex gap-1">
                   {detection.structures.map(s => (
-                    <span key={s} className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-400 font-mono capitalize">
+                    <span key={s} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white font-mono capitalize">
                       {s}
                     </span>
                   ))}
                 </div>
-                <span className="text-[10px] font-mono text-yellow-400/70">
+                <span className="text-[10px] font-mono text-white/50">
                   {detection.estimatedComplexity}
                 </span>
               </div>
@@ -184,7 +185,7 @@ export default function LabPage() {
                   onClick={() => selectSolution(i)}
                   className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
                     activeSolution === i
-                      ? 'bg-gradient-to-r from-cyan-500/30 to-violet-500/30 text-white ring-1 ring-white/20'
+                      ? 'bg-white text-black'
                       : 'text-white/40 hover:text-white/70'
                   }`}
                 >
@@ -196,21 +197,27 @@ export default function LabPage() {
         </header>
 
         {/* Three-panel layout */}
-        <div className="flex-1 flex min-h-0 overflow-hidden">
-          {/* Left: Problem description */}
-          <div className="w-72 shrink-0 border-r border-white/8 flex flex-col overflow-hidden">
-            <ProblemPanel problem={activeProblem} />
-          </div>
+        <div className="flex-1 min-h-0 overflow-hidden w-full">
+          <PanelGroup direction="horizontal" className="w-full h-full">
+            {/* Left: Problem description */}
+            <Panel defaultSize={22} minSize={15} className="flex flex-col overflow-hidden">
+              <ProblemPanel problem={activeProblem} />
+            </Panel>
 
-          {/* Center: Code editor */}
-          <div className="flex-1 min-w-0 border-r border-white/8 flex flex-col">
-            <CodeEditor />
-          </div>
+            <PanelResizeHandle className="w-2 bg-white/5 hover:bg-white/20 active:bg-white/40 transition-colors cursor-col-resize shrink-0 z-10" />
 
-          {/* Right: Visualization & Tabs */}
-          <div className="w-96 shrink-0 flex flex-col overflow-hidden">
-            <RightPanel />
-          </div>
+            {/* Center: Code editor */}
+            <Panel defaultSize={48} minSize={30} className="flex flex-col min-w-0 bg-[#0a0a0f]">
+              <CodeEditor />
+            </Panel>
+
+            <PanelResizeHandle className="w-2 bg-white/5 hover:bg-white/20 active:bg-white/40 transition-colors cursor-col-resize shrink-0 z-10" />
+
+            {/* Right: Visualization & Tabs */}
+            <Panel defaultSize={30} minSize={20} className="flex flex-col overflow-hidden bg-[#0a0a12]">
+              <RightPanel />
+            </Panel>
+          </PanelGroup>
         </div>
 
         {/* Bottom: Execution controls */}

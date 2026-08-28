@@ -109,7 +109,7 @@ export default function CodeEditor() {
           <span className="ml-2 text-xs font-mono text-white/30">
             {activeProblem?.title ?? 'Untitled'}
           </span>
-          <select className="ml-2 bg-black/40 border border-white/10 text-white/70 text-xs rounded px-2 py-0.5 outline-none focus:border-violet-500/50">
+          <select className="ml-2 bg-black/40 border border-white/10 text-white/70 text-xs rounded px-2 py-0.5 outline-none focus:border-white/30">
             <option value="javascript">JavaScript</option>
             <option value="cpp" disabled>C++ (Coming in Phase 6)</option>
             <option value="python" disabled>Python (Coming later)</option>
@@ -127,7 +127,7 @@ export default function CodeEditor() {
           <button
             onClick={run}
             disabled={isRunning || !userCode.trim()}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white shadow-lg shadow-cyan-500/20 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-white hover:bg-gray-200 text-black shadow-lg shadow-white/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRunning ? (
               <><Cpu size={14} className="animate-spin" /> Running...</>

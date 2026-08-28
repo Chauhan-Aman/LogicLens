@@ -11,6 +11,8 @@
  */
 
 import type { ExecutionEvent } from './events';
+import { transpileCode } from './astTranspiler';
+
 
 const MAX_STEPS = 10000; // safety guard
 
@@ -187,8 +189,14 @@ export function executeCode(userCode: string, inputJson: string): ExecutionResul
   for (const [key, value] of Object.entries(input)) {
     if (Array.isArray(value)) {
       proxiedInput[key] = createTrackedArray(value, key, emit);
+      // Populate the initial array state in the timeline
+      value.forEach((v, i) => {
+        emit({ type: 'ARRAY_WRITE', array: key, value: v, index: i });
+      });
     } else {
       proxiedInput[key] = value;
+      // Populate the initial variable state in the timeline
+      emit({ type: 'VARIABLE_UPDATE', variable: key, value });
     }
   }
 

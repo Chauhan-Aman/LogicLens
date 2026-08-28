@@ -28,7 +28,7 @@ export default function VariablePanel({ variables }: VariablePanelProps) {
           transition={{ duration: 0.15 }}
           className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/5 ring-1 ring-white/10"
         >
-          <span className="text-xs font-mono text-cyan-400 font-semibold">{name}</span>
+          <span className="text-xs font-mono text-gray-300 font-semibold">{name}</span>
           <span className="text-xs font-mono text-white/70 truncate max-w-[80px]">
             {JSON.stringify(val)}
           </span>

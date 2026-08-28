@@ -11,16 +11,16 @@ interface ProblemCardProps {
 }
 
 const DIFFICULTY_STYLES: Record<string, string> = {
-  Easy:   'text-emerald-400 bg-emerald-500/10',
-  Medium: 'text-yellow-400 bg-yellow-500/10',
-  Hard:   'text-red-400 bg-red-500/10',
+  Easy:   'text-emerald-300/90 bg-emerald-500/10 ring-1 ring-emerald-500/20',
+  Medium: 'text-amber-300/90 bg-amber-500/10 ring-1 ring-amber-500/20',
+  Hard:   'text-rose-300/90 bg-rose-500/10 ring-1 ring-rose-500/20',
 };
 
 const TAG_COLORS = [
-  'bg-cyan-500/10 text-cyan-400',
-  'bg-violet-500/10 text-violet-400',
-  'bg-pink-500/10 text-pink-400',
-  'bg-emerald-500/10 text-emerald-400',
+  'bg-blue-500/10 text-blue-300/90 ring-1 ring-blue-500/20',
+  'bg-indigo-500/10 text-indigo-300/90 ring-1 ring-indigo-500/20',
+  'bg-fuchsia-500/10 text-fuchsia-300/90 ring-1 ring-fuchsia-500/20',
+  'bg-teal-500/10 text-teal-300/90 ring-1 ring-teal-500/20',
 ];
 
 export default function ProblemCard({ problem, active, onSelect }: ProblemCardProps) {
@@ -32,7 +32,7 @@ export default function ProblemCard({ problem, active, onSelect }: ProblemCardPr
       onClick={() => onSelect(problem)}
       className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 ${
         active
-          ? 'bg-gradient-to-br from-violet-500/15 to-cyan-500/10 border-violet-500/40 ring-1 ring-violet-500/30'
+          ? 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20'
           : 'bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15'
       }`}
     >
@@ -64,7 +64,7 @@ export default function ProblemCard({ problem, active, onSelect }: ProblemCardPr
 
         <ArrowRight
           size={14}
-          className={`shrink-0 mt-0.5 transition-all ${active ? 'text-violet-400' : 'text-white/20'}`}
+          className={`shrink-0 mt-0.5 transition-all ${active ? 'text-blue-400' : 'text-white/20'}`}
         />
       </div>
 

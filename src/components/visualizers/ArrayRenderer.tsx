@@ -11,12 +11,12 @@ interface ArrayRendererProps {
 }
 
 const POINTER_COLORS: Record<string, string> = {
-  i:    'text-cyan-400',
-  j:    'text-pink-400',
-  mid:  'text-yellow-400',
-  left: 'text-green-400',
-  right:'text-orange-400',
-  curr: 'text-violet-400',
+  i:    'text-gray-300',
+  j:    'text-gray-400',
+  mid:  'text-gray-300',
+  left: 'text-gray-300',
+  right:'text-gray-300',
+  curr: 'text-white',
 };
 
 function getPointerColor(name: string): string {
@@ -24,11 +24,11 @@ function getPointerColor(name: string): string {
 }
 
 const CELL_ACCENT: Record<string, string> = {
-  highlight: 'ring-2 ring-cyan-400 bg-cyan-500/20 text-cyan-200',
-  write:     'ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-200',
-  swapA:     'ring-2 ring-pink-400 bg-pink-500/25 text-pink-200',
-  swapB:     'ring-2 ring-pink-400 bg-pink-500/25 text-pink-200',
-  normal:    'ring-1 ring-white/10 bg-white/5 text-white/80',
+  highlight: 'ring-2 ring-white bg-white text-black font-bold shadow-md shadow-white/20',
+  write:     'ring-2 ring-gray-400 bg-gray-300 text-black font-bold',
+  swapA:     'ring-2 ring-gray-500 bg-gray-500 text-white shadow-md shadow-gray-500/20',
+  swapB:     'ring-2 ring-gray-500 bg-gray-500 text-white shadow-md shadow-gray-500/20',
+  normal:    'ring-1 ring-white/20 bg-white/5 text-white/80',
 };
 
 export default function ArrayRenderer({ name, state, pointers = {}, maxVisible = 20 }: ArrayRendererProps) {

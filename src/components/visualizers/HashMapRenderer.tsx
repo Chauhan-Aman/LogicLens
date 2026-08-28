@@ -26,13 +26,13 @@ function EntryRow({
       transition={{ duration: 0.2 }}
       className={`flex items-center justify-between px-3 py-2 rounded-lg font-mono text-sm transition-all duration-200 ${
         highlighted
-          ? 'bg-violet-500/25 ring-1 ring-violet-400 text-violet-200'
-          : 'bg-white/5 ring-1 ring-white/10 text-white/70'
+          ? 'bg-white ring-1 ring-white text-black font-bold shadow-md shadow-white/20'
+          : 'bg-white/5 ring-1 ring-white/20 text-white/80'
       }`}
     >
-      <span className="text-cyan-300">{JSON.stringify(k)}</span>
-      <span className="text-white/30 mx-2">→</span>
-      <span className="text-emerald-300">{JSON.stringify(v)}</span>
+      <span className={highlighted ? "text-gray-800" : "text-gray-300"}>{JSON.stringify(k)}</span>
+      <span className={highlighted ? "text-gray-500 mx-2" : "text-white/30 mx-2"}>→</span>
+      <span className={highlighted ? "text-black" : "text-white"}>{JSON.stringify(v)}</span>
     </motion.div>
   );
 }
@@ -47,8 +47,8 @@ function SetRow({ value, highlighted }: { value: unknown; highlighted: boolean }
       transition={{ duration: 0.2 }}
       className={`px-3 py-2 rounded-lg font-mono text-sm font-medium transition-all duration-200 ${
         highlighted
-          ? 'bg-pink-500/25 ring-1 ring-pink-400 text-pink-200'
-          : 'bg-white/5 ring-1 ring-white/10 text-white/70'
+          ? 'bg-white ring-1 ring-white text-black shadow-md shadow-white/20'
+          : 'bg-white/5 ring-1 ring-white/20 text-white/80'
       }`}
     >
       {JSON.stringify(value)}

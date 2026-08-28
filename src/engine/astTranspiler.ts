@@ -14,16 +14,18 @@ export function transpileCode(code: string): string {
         // Track variable declarations: let x = 5;
         VariableDeclaration(path: any) {
           // Prevent infinite loops from injecting our own code
-          if (path.node.loc === null) return; 
+          if (path.node.loc === null) return;
+
+          // Skip declarations inside for-loop inits (e.g. for (let i = 0; ...))
+          // In that context the parent is ForStatement, not a Block, so insertAfter is invalid.
+          const parent = path.parent;
+          if (parent.type === 'ForStatement' && parent.init === path.node) return;
 
           const newNodes: any[] = [];
           
           path.node.declarations.forEach((decl: any) => {
             if (t.isIdentifier(decl.id) && decl.init) {
               const varName = decl.id.name;
-              
-              // Ignore loop variables temporarily to prevent clutter, or track them?
-              // Let's track them for exactness.
               const trackStatement = t.expressionStatement(
                 t.callExpression(
                   t.memberExpression(t.identifier('__ll'), t.identifier('setVar')),
@@ -116,6 +118,9 @@ export function transpileCode(code: string): string {
     const result = Babel.transform(code, {
       plugins: [logicLensPlugin],
       retainLines: true,
+      parserOpts: {
+        allowReturnOutsideFunction: true,
+      },
     });
     
     return result?.code || code;

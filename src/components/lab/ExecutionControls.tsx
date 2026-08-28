@@ -64,13 +64,13 @@ export default function ExecutionControls() {
           }}
         >
           <motion.div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-cyan-500 to-violet-500"
+            className="absolute inset-y-0 left-0 rounded-full bg-white"
             style={{ width: `${progress}%` }}
             transition={{ duration: 0.1 }}
           />
           {/* Thumb */}
           <motion.div
-            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-lg ring-2 ring-cyan-400 -ml-2 group-hover:scale-110 transition-transform"
+            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-lg ring-2 ring-white/30 -ml-2 group-hover:scale-110 transition-transform"
             style={{ left: `${progress}%` }}
           />
         </div>
@@ -96,9 +96,9 @@ export default function ExecutionControls() {
           <button
             onClick={() => setIsPlaying(!isPlaying)}
             disabled={currentStep >= totalSteps && !isPlaying}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white shadow-lg shadow-cyan-500/20 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white hover:bg-gray-200 text-black shadow-lg shadow-white/10 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-1" />}
           </button>
           <ControlBtn
             icon={<SkipForward size={15} />}
@@ -116,7 +116,7 @@ export default function ExecutionControls() {
 
         {/* Speed selector */}
         <div className="flex items-center gap-1.5">
-          <Zap size={12} className="text-yellow-400" />
+          <Zap size={12} className="text-white/40" />
           <div className="flex gap-1">
             {SPEED_OPTIONS.map(s => (
               <button
@@ -124,7 +124,7 @@ export default function ExecutionControls() {
                 onClick={() => setPlaySpeed(s)}
                 className={`text-xs font-mono px-2 py-1 rounded-md transition-all duration-150 ${
                   playSpeed === s
-                    ? 'bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-400'
+                    ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-white/40 hover:text-white/70 hover:bg-white/5'
                 }`}
               >

@@ -10,9 +10,9 @@ interface ProblemPanelProps {
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
-  Easy:   'text-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-500/30',
-  Medium: 'text-yellow-400 bg-yellow-500/10 ring-1 ring-yellow-500/30',
-  Hard:   'text-red-400 bg-red-500/10 ring-1 ring-red-500/30',
+  Easy:   'text-emerald-300/90 bg-emerald-500/10 ring-1 ring-emerald-500/20',
+  Medium: 'text-amber-300/90 bg-amber-500/10 ring-1 ring-amber-500/20',
+  Hard:   'text-rose-300/90 bg-rose-500/10 ring-1 ring-rose-500/20',
 };
 
 export default function ProblemPanel({ problem }: ProblemPanelProps) {
@@ -51,9 +51,9 @@ export default function ProblemPanel({ problem }: ProblemPanelProps) {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden"
+            className="overflow-hidden flex flex-col flex-1"
           >
-            <div className="p-4 space-y-4 overflow-y-auto max-h-72">
+            <div className="p-4 space-y-4 overflow-y-auto flex-1">
               {/* Tags */}
               <div className="flex flex-wrap gap-1.5">
                 {problem.tags.map(tag => (
@@ -76,8 +76,8 @@ export default function ProblemPanel({ problem }: ProblemPanelProps) {
                 {problem.examples.map((ex, i) => (
                   <div key={i} className="rounded-lg bg-white/5 ring-1 ring-white/10 p-3 space-y-1">
                     <div className="text-xs font-mono text-white/30">Example {i + 1}</div>
-                    <div className="text-xs font-mono text-cyan-300/80">Input: {ex.input}</div>
-                    <div className="text-xs font-mono text-emerald-300/80">Output: {ex.output}</div>
+                    <div className="text-xs font-mono text-gray-300">Input: {ex.input}</div>
+                    <div className="text-xs font-mono text-white font-semibold">Output: {ex.output}</div>
                   </div>
                 ))}
               </div>
