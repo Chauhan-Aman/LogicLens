@@ -4,12 +4,13 @@ import { useState } from 'react';
 import VisualizationPanel from './VisualizationPanel';
 import ExecutionTraceTable from './ExecutionTraceTable';
 import { useLabStore } from '@/store/labStore';
-import { Eye, List, Lightbulb, BookOpen } from 'lucide-react';
+import { Eye, List, Lightbulb, BookOpen, GitMerge } from 'lucide-react';
 
 import ConceptualVisualizer from './ConceptualVisualizer';
+import FlowGraph from '../visualizers/FlowGraph';
 
 export default function RightPanel() {
-  const [activeTab, setActiveTab] = useState<'visualizer' | 'trace' | 'conceptual'>('visualizer');
+  const [activeTab, setActiveTab] = useState<'visualizer' | 'flow' | 'trace' | 'conceptual'>('visualizer');
   const { activeProblem } = useLabStore();
 
   return (
@@ -22,6 +23,13 @@ export default function RightPanel() {
           onClick={() => setActiveTab('visualizer')}
           icon={<Eye size={14} />}
           label="Execution Visualizer"
+        />
+        <TabButton 
+          id="flow" 
+          active={activeTab === 'flow'} 
+          onClick={() => setActiveTab('flow')}
+          icon={<GitMerge size={14} />}
+          label="Flow Graph"
         />
         <TabButton 
           id="trace" 
@@ -42,6 +50,7 @@ export default function RightPanel() {
       {/* Tab Content */}
       <div className="flex-1 min-h-0 overflow-hidden relative bg-[#0a0a12]">
         {activeTab === 'visualizer' && <VisualizationPanel />}
+        {activeTab === 'flow' && <FlowGraph />}
         {activeTab === 'trace' && <ExecutionTraceTable />}
         {activeTab === 'conceptual' && <ConceptualVisualizer />}
       </div>

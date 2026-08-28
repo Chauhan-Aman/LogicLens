@@ -17,5 +17,11 @@
     }
   ],
   "structures": ["array", "hashmap"],
-  "defaultInput": "{ \"nums\": [1, 2, 3, 1] }"
+  "defaultInput": "{ \"nums\": [1, 2, 3, 1] }",
+  "testCases": [
+    { "input": { "nums": [1, 2, 3, 1] },    "expected": true },
+    { "input": { "nums": [1, 2, 3, 4] },    "expected": false },
+    { "input": { "nums": [1, 1, 1, 3, 3] },"expected": true },
+    { "input": { "nums": [5] },             "expected": false }
+  ]
 }

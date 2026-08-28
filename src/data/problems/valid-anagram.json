@@ -17,5 +17,11 @@
     }
   ],
   "structures": ["hashmap"],
-  "defaultInput": "{ \"s\": \"anagram\", \"t\": \"nagaram\" }"
+  "defaultInput": "{ \"s\": \"anagram\", \"t\": \"nagaram\" }",
+  "testCases": [
+    { "input": { "s": "anagram", "t": "nagaram" }, "expected": true },
+    { "input": { "s": "rat",     "t": "car" },     "expected": false },
+    { "input": { "s": "a",       "t": "ab" },      "expected": false },
+    { "input": { "s": "a",       "t": "a" },       "expected": true }
+  ]
 }

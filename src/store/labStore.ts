@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import type { StateSnapshot } from '@/engine/events';
 import type { DetectionResult } from '@/engine/detector';
+import type { TestResult } from '@/engine/testRunner';
 
 export interface Problem {
   id: string;
@@ -21,6 +22,11 @@ export interface Problem {
   }[];
   structures: string[];
   defaultInput: string;
+  testCases?: {
+    input: Record<string, unknown>;
+    expected: unknown;
+    exactOrder?: boolean;
+  }[];
 }
 
 interface LabState {
@@ -53,6 +59,10 @@ interface LabState {
   // Error
   executionError: string | null;
   setExecutionError: (e: string | null) => void;
+
+  // Test Results
+  testResults: TestResult[];
+  setTestResults: (results: TestResult[]) => void;
 }
 
 export const useLabStore = create<LabState>((set) => ({
@@ -80,4 +90,7 @@ export const useLabStore = create<LabState>((set) => ({
 
   executionError: null,
   setExecutionError: (e) => set({ executionError: e }),
+
+  testResults: [],
+  setTestResults: (results) => set({ testResults: results }),
 }));

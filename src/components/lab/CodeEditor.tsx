@@ -7,6 +7,8 @@ import { useLabStore } from '@/store/labStore';
 import { executeCode } from '@/engine/executor';
 import { buildTimeline } from '@/engine/stateEngine';
 import { detectStructures } from '@/engine/detector';
+import { runAllTests } from '@/engine/testRunner';
+import TestResultsPanel from './TestResultsPanel';
 
 // Monaco editor is SSR-incompatible, load client-side only
 const MonacoEditor = dynamic(
@@ -46,6 +48,7 @@ export default function CodeEditor() {
   } = useLabStore();
 
   const [isRunning, setIsRunning] = useState(false);
+  const [isRunningAll, setIsRunningAll] = useState(false);
 
   const run = useCallback(async () => {
     if (!userCode.trim()) return;
@@ -73,6 +76,42 @@ export default function CodeEditor() {
       setIsRunning(false);
     }
   }, [userCode, inputJson, activeLanguage, setTimeline, setDetection, setExecutionError]);
+
+  const handleRunAllTests = useCallback(async () => {
+    if (!userCode.trim() || !activeProblem?.testCases) return;
+    setIsRunningAll(true);
+    setExecutionError(null);
+    useLabStore.getState().setTestResults([]);
+
+    try {
+      // Detect structures on first run
+      setDetection(detectStructures(userCode));
+
+      const results = await runAllTests(userCode, activeProblem.testCases, activeLanguage);
+      useLabStore.getState().setTestResults(results);
+
+      // If there are failures, load the first failure into visualizer
+      const firstFailure = results.find(r => !r.passed);
+      if (firstFailure) {
+        setInputJson(JSON.stringify(firstFailure.input, null, 2));
+        if (firstFailure.error) {
+          setExecutionError(firstFailure.error);
+          setTimeline([]);
+        } else {
+          setTimeline(firstFailure.timeline);
+        }
+      } else if (results.length > 0) {
+        // Load the first passing test if all passed
+        setInputJson(JSON.stringify(results[0].input, null, 2));
+        setTimeline(results[0].timeline);
+      }
+
+    } catch (e) {
+      setExecutionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsRunningAll(false);
+    }
+  }, [userCode, activeProblem, activeLanguage, setTimeline, setDetection, setExecutionError, setInputJson]);
 
   function handleEditorMount(editor: unknown, monaco: unknown) {
     // Register custom dark theme
@@ -140,15 +179,29 @@ export default function CodeEditor() {
           </button>
           <button
             onClick={run}
-            disabled={isRunning || !userCode.trim()}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-white hover:bg-gray-200 text-black shadow-lg shadow-white/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isRunning || isRunningAll || !userCode.trim()}
+            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-white/10 hover:bg-white/20 text-white transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRunning ? (
               <><Cpu size={14} className="animate-spin" /> Running...</>
             ) : (
-              <><Play size={14} /> Run</>
+              <><Play size={14} /> Run Current</>
             )}
           </button>
+          
+          {activeProblem?.testCases && (
+            <button
+              onClick={handleRunAllTests}
+              disabled={isRunning || isRunningAll || !userCode.trim()}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-white hover:bg-gray-200 text-black shadow-lg shadow-white/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRunningAll ? (
+                <><Cpu size={14} className="animate-spin" /> Testing...</>
+              ) : (
+                <><Play size={14} /> Run All Tests</>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -196,9 +249,12 @@ export default function CodeEditor() {
           onChange={(e) => setInputJson(e.target.value)}
           placeholder='{ "nums": [2, 7, 11, 15], "target": 9 }'
           rows={4}
-          className="w-full px-4 pb-3 bg-transparent font-mono text-xs text-white/60 placeholder-white/20 resize-none focus:outline-none"
+          className="w-full px-4 pb-3 bg-transparent font-mono text-xs text-white/60 placeholder-white/20 resize-y min-h-[4rem] max-h-[20rem] focus:outline-none"
         />
       </div>
+
+      {/* Test Results */}
+      <TestResultsPanel />
     </div>
   );
 }

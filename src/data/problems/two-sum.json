@@ -29,5 +29,11 @@
     }
   ],
   "structures": ["array", "hashmap"],
-  "defaultInput": "{ \"nums\": [2, 7, 11, 15], \"target\": 9 }"
+  "defaultInput": "{ \"nums\": [2, 7, 11, 15], \"target\": 9 }",
+  "testCases": [
+    { "input": { "nums": [2, 7, 11, 15], "target": 9 },  "expected": [0, 1], "exactOrder": false },
+    { "input": { "nums": [3, 2, 4],       "target": 6 },  "expected": [1, 2], "exactOrder": false },
+    { "input": { "nums": [3, 3],           "target": 6 },  "expected": [0, 1], "exactOrder": false },
+    { "input": { "nums": [1, 5, 3, 7, 9], "target": 12 }, "expected": [2, 4], "exactOrder": false }
+  ]
 }

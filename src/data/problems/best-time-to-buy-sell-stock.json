@@ -17,5 +17,11 @@
     }
   ],
   "structures": ["array"],
-  "defaultInput": "{ \"prices\": [7, 1, 5, 3, 6, 4] }"
+  "defaultInput": "{ \"prices\": [7, 1, 5, 3, 6, 4] }",
+  "testCases": [
+    { "input": { "prices": [7, 1, 5, 3, 6, 4] }, "expected": 5 },
+    { "input": { "prices": [7, 6, 4, 3, 1] },    "expected": 0 },
+    { "input": { "prices": [2, 4, 1] },          "expected": 2 },
+    { "input": { "prices": [3, 2, 6, 5, 0, 3] }, "expected": 4 }
+  ]
 }

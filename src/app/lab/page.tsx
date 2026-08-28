@@ -16,7 +16,7 @@ const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
 
 export default function LabPage() {
   const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, setActiveLanguage } = useLabStore();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [diffFilter, setDiffFilter] = useState('All');
   const [activeSolution, setActiveSolution] = useState(0);
@@ -67,7 +67,7 @@ export default function LabPage() {
         {sidebarOpen && (
           <motion.aside
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
+            animate={{ width: 320, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="flex flex-col border-r border-white/8 bg-[#0a0a12] shrink-0 overflow-hidden"
@@ -150,7 +150,7 @@ export default function LabPage() {
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-5 h-10 bg-white/10 hover:bg-white/20 rounded-r-lg text-white/50 hover:text-white transition-all"
-        style={{ left: sidebarOpen ? 280 : 0 }}
+        style={{ left: sidebarOpen ? 320 : 0 }}
       >
         {sidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
       </button>
