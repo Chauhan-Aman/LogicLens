@@ -19,7 +19,7 @@
       "name": "Sliding Window (Optimal)",
       "complexity": { "time": "O(n)", "space": "O(1)" },
       "language": "cpp",
-      "code": "// Sliding Window C++ — O(n)\nint minPrice = 2147483647;\nint maxProfit = 0;\n\nfor (int i = 0; i < prices.size(); i++) {\n  int price = prices[i];\n  if (price < minPrice) {\n    minPrice = price;\n    cout << \"New min price: \" << minPrice << endl;\n  } else {\n    int profit = price - minPrice;\n    if (profit > maxProfit) {\n      maxProfit = profit;\n      cout << \"New max profit: \" << maxProfit << endl;\n    }\n  }\n}\nreturn 0;"
+      "code": "// Sliding Window C++ — O(n)\n#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nint main() {\n  int minPrice = 2147483647;\n  int maxProfit = 0;\n\n  for (int i = 0; i < prices.size(); i++) {\n    int price = prices[i];\n    if (price < minPrice) {\n      minPrice = price;\n      cout << \"New min price: \" << minPrice << endl;\n    } else {\n      int profit = price - minPrice;\n      if (profit > maxProfit) {\n        maxProfit = profit;\n        cout << \"New max profit: \" << maxProfit << endl;\n      }\n    }\n  }\n  return 0;\n}"
     }
   ],
   "structures": ["array"],

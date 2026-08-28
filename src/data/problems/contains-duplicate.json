@@ -19,7 +19,7 @@
       "name": "Brute Force",
       "complexity": { "time": "O(n^2)", "space": "O(1)" },
       "language": "cpp",
-      "code": "// Brute Force C++ — O(n^2)\nfor (int i = 0; i < nums.size(); i++) {\n  for (int j = i + 1; j < nums.size(); j++) {\n    if (nums[i] == nums[j]) {\n      cout << \"Duplicate found: \" << nums[i] << endl;\n      return 0;\n    }\n  }\n}\ncout << \"No duplicates found\" << endl;\nreturn 0;"
+      "code": "// Brute Force C++ — O(n^2)\n#include <iostream>\n#include <vector>\n\nusing namespace std;\n\nint main() {\n  for (int i = 0; i < nums.size(); i++) {\n    for (int j = i + 1; j < nums.size(); j++) {\n      if (nums[i] == nums[j]) {\n        cout << \"Duplicate found: \" << nums[i] << endl;\n        return 0;\n      }\n    }\n  }\n  cout << \"No duplicates found\" << endl;\n  return 0;\n}"
     }
   ],
   "structures": ["array", "hashmap"],

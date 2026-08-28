@@ -38,13 +38,13 @@ while (left <= right) {
   int midVal = nums[mid];
   
   if (midVal == target) {
-    __ll_note("Found target at index " + __ll_to_json(mid));
+    cout << "Found target at index " << mid << endl;
     return 0;
   } else if (midVal < target) {
-    __ll_note("midVal < target, search right half");
+    cout << "midVal < target, search right half" << endl;
     left = mid + 1;
   } else {
-    __ll_note("midVal > target, search left half");
+    cout << "midVal > target, search left half" << endl;
     right = mid - 1;
   }
 }

@@ -32,7 +32,7 @@ def transpile(code):
                         injection = f'\n__ll_set_var("{name}", {name});'.encode('utf-8')
                         replacements.append((semicolon_offset + 1, injection))
         
-        if node.kind == CursorKind.FOR_STMT:
+        if node.kind == CursorKind.FOR_STMT or node.kind == CursorKind.WHILE_STMT:
             declared_vars = []
             body_node = None
             for child in node.get_children():
@@ -43,9 +43,10 @@ def transpile(code):
                 elif child.kind == CursorKind.COMPOUND_STMT:
                     body_node = child
                     
-            # Inject blockEnter('loop', 'for') BEFORE the loop
+            # Inject blockEnter('loop', type) BEFORE the loop
+            loop_type = "for" if node.kind == CursorKind.FOR_STMT else "while"
             start_offset = node.extent.start.offset
-            replacements.append((start_offset, b'\n__ll_block_enter("loop", "for");\n'))
+            replacements.append((start_offset, f'\n__ll_block_enter("loop", "{loop_type}");\n'.encode('utf-8')))
 
             # Inject blockExit() AFTER the loop
             end_offset = node.extent.end.offset

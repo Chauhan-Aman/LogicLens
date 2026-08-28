@@ -16,7 +16,7 @@ const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
 
 export default function LabPage() {
   const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, setActiveLanguage } = useLabStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
   const [diffFilter, setDiffFilter] = useState('All');
   const [activeSolution, setActiveSolution] = useState(0);
@@ -52,13 +52,6 @@ export default function LabPage() {
     setExecutionError(null);
   }
 
-  // Load first problem on mount
-  useEffect(() => {
-    if (!activeProblem && PROBLEMS.length > 0) {
-      selectProblem(PROBLEMS[0]);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div className="flex h-screen bg-[#080810] overflow-hidden text-white">
