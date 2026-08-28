@@ -1,12 +1,30 @@
 
+#include "LogicLens.h"
+
+// --- INJECTED GLOBAL INPUTS ---
+
+std::vector<int> nums = {-1, 0, 3, 5, 9, 12};
+int target = 9;
+
+
+struct __LL_Init {
+    __LL_Init() {
+        __ll_set_var("nums", nums);
+        __ll_set_var("target", target);
+
+    }
+} __ll_init_instance;
+
+// ------------------------------
+
+// --- USER CODE ---
+// Binary Search C++ â€” O(log n)
 #include <iostream>
 #include <vector>
 
 using namespace std;
 
 int main() {
-  vector<int> nums = {-1, 0, 3, 5, 9, 12};
-  int target = 9;
   int left = 0;
   int right = nums.size() - 1;
 
@@ -27,3 +45,4 @@ int main() {
   }
   return 0;
 }
+// -----------------

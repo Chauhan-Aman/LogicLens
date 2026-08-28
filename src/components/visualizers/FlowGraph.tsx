@@ -3,7 +3,7 @@
 import { useLabStore } from '@/store/labStore';
 import { useRef, useEffect, useState, useMemo } from 'react';
 import FlowNode from './FlowNode';
-import { Plus, RefreshCcw, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, GitBranch, Play, Plus, RefreshCcw, Variable, ChevronLeft } from 'lucide-react';
 import type { StateSnapshot } from '@/engine/events';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -302,6 +302,13 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
                {/* The main vertical timeline spine */}
                <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-blue-500/20 -translate-x-1/2" />
                
+               {/* Return Arrow Path (Looping back) */}
+               <div className="absolute top-[-24px] bottom-0 left-1/2 w-[220px] border-t border-r border-b border-blue-500/20 rounded-r-xl pointer-events-none" />
+               {/* Arrowhead pointing left at the top */}
+               <div className="absolute top-[-29px] left-1/2 translate-x-[40px] text-blue-500/50">
+                 <ChevronLeft size={12} />
+               </div>
+
                <div className="relative z-10 w-full flex flex-col items-center gap-1">
                  {childrenToRender}
                </div>

@@ -284,7 +284,8 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
       }
 
       case 'ANNOTATION': {
-        next.annotation = ev.message ?? '';
+        const payload = (ev as any).payload;
+        next.annotation = ev.message || (payload && payload.message) || '';
         break;
       }
 

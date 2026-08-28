@@ -66,9 +66,10 @@ export default function VisualizationPanel() {
   for (let i = 0; i <= currentStep; i++) {
     const ev = timeline[i].event;
     if (ev.type === 'BLOCK_ENTER') {
-       if (ev.label === 'loop') {
+       const bType = (ev as any).blockType || (ev as any).label;
+       if (bType === 'loop' || bType === 'for' || bType === 'while') {
           blockStack.push({ type: 'loop', iters: 0 });
-       } else if (ev.label === 'iteration') {
+       } else if (bType === 'iteration') {
           if (blockStack.length > 0) {
              // Increment iteration count on the nearest loop
              for (let j = blockStack.length - 1; j >= 0; j--) {
