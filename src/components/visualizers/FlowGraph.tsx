@@ -3,7 +3,7 @@
 import { useLabStore } from '@/store/labStore';
 import { useRef, useEffect, useState, useMemo } from 'react';
 import FlowNode from './FlowNode';
-import { ArrowRight, ChevronDown, ChevronRight, GitBranch, Play, Plus, RefreshCcw, Variable, ChevronLeft } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, GitBranch, Play, Plus, RefreshCcw, Variable, ChevronLeft, Maximize, Minimize } from 'lucide-react';
 import type { StateSnapshot } from '@/engine/events';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -342,6 +342,34 @@ export default function FlowGraph() {
   const { timeline, currentStep, setCurrentStep } = useLabStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only allow drag if clicking on the background, not on a node
+    if ((e.target as HTMLElement).closest('.z-10')) return;
+    setIsDragging(true);
+    if (containerRef.current) {
+      dragStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        scrollLeft: containerRef.current.scrollLeft,
+        scrollTop: containerRef.current.scrollTop
+      };
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault(); // Prevent text selection
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    containerRef.current.scrollLeft = dragStart.current.scrollLeft - dx;
+    containerRef.current.scrollTop = dragStart.current.scrollTop - dy;
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
 
   // Group raw timeline by detecting implicit iterations if explicit blocks are missing.
   // This is a heuristic for C++ runs which don't emit BLOCK_ENTER natively.
@@ -381,7 +409,7 @@ export default function FlowGraph() {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full bg-[#050508] overflow-auto select-none p-12"
+      className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'relative w-full h-full'} bg-[#050508] overflow-auto select-none p-12 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       onWheel={(e) => {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
@@ -389,6 +417,10 @@ export default function FlowGraph() {
           setScale(s => Math.min(Math.max(s * zoomFactor, 0.4), 2));
         }
       }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     >
       <div 
         className="absolute inset-0 pointer-events-none opacity-[0.15] z-0" 
@@ -413,10 +445,18 @@ export default function FlowGraph() {
         </div>
       </div>
 
-      <div className="fixed bottom-6 right-6 flex flex-col gap-2 bg-black/50 p-2 rounded-lg border border-white/10 backdrop-blur-md z-50">
-        <button className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" onClick={() => setScale(s => Math.min(s * 1.2, 2))}>+</button>
-        <button className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" onClick={() => setScale(s => Math.max(s * 0.8, 0.4))}>-</button>
-        <button className="text-[10px] font-mono text-white/50 hover:text-white mt-1" onClick={() => setScale(1)}>1:1</button>
+      <div className={`fixed ${isFullscreen ? 'bottom-8 right-8' : 'bottom-6 right-6'} flex flex-col gap-2 bg-black/50 p-2 rounded-lg border border-white/10 backdrop-blur-md z-50`}>
+        <button title="Zoom In" className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" onClick={() => setScale(s => Math.min(s * 1.2, 2))}>+</button>
+        <button title="Zoom Out" className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" onClick={() => setScale(s => Math.max(s * 0.8, 0.4))}>-</button>
+        <button title="Reset Zoom" className="text-[10px] font-mono text-white/50 hover:text-white mt-1" onClick={() => setScale(1)}>1:1</button>
+        <div className="w-full h-[1px] bg-white/10 my-1" />
+        <button 
+          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" 
+          onClick={() => setIsFullscreen(!isFullscreen)}
+        >
+          {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+        </button>
       </div>
     </div>
   );
