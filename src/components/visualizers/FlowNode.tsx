@@ -94,6 +94,10 @@ export default function FlowNode({ nodeData, isActive, currentStep, onClick }: F
       Icon = ArrowRightLeft;
       borderColor = 'border-orange-500/30';
       iconColor = 'text-orange-400';
+    } else if (ev.type === 'ANNOTATION') {
+      title = ev.message || (ev.payload && ev.payload.message) || 'Annotation';
+      subtitle = 'Note';
+      Icon = Globe;
     } else {
       title = ev.type.replace('_', ' ');
       Icon = Globe;

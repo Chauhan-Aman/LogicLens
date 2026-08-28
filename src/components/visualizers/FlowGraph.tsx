@@ -93,6 +93,7 @@ function TreeStep({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
           nodeData={{ id: node.id, type: 'step', snapshots: node.snapshots }} 
           isActive={isActive} 
           currentStep={currentStep}
+          onClick={(step) => setCurrentStep(step)}
         />
       </div>
     </div>
@@ -175,10 +176,6 @@ function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: Exe
             <div className="w-[1px] h-4 bg-white/10" />
             <div className="flex flex-col items-center w-full border-l border-dashed border-white/10 ml-[340px] -translate-x-[170px] pl-6 py-2">
               {node.children
-                .filter(child => {
-                  if (child.type === 'step' && child.snapshots[0]?.event.type === 'VARIABLE_UPDATE') return false;
-                  return true;
-                })
                 .map(child => (
                   <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
               ))}
