@@ -5,20 +5,33 @@ import * as path from 'path';
 import * as os from 'os';
 
 function generateCppInit(input: any): string {
-  let cpp = '';
+  let cppDecls = '';
+  let cppTrackers = '';
   for (const [key, value] of Object.entries(input)) {
     if (Array.isArray(value)) {
-      // Assuming array of ints for MVP
-      cpp += `    std::vector<int> ${key} = {${value.join(', ')}};\n`;
+      cppDecls += `std::vector<int> ${key} = {${value.join(', ')}};\n`;
+      cppTrackers += `        __ll_set_var("${key}", ${key});\n`;
     } else if (typeof value === 'number') {
-      cpp += `    int ${key} = ${value};\n`;
+      cppDecls += `int ${key} = ${value};\n`;
+      cppTrackers += `        __ll_set_var("${key}", ${key});\n`;
     } else if (typeof value === 'string') {
-      cpp += `    std::string ${key} = "${value}";\n`;
+      cppDecls += `std::string ${key} = "${value}";\n`;
+      cppTrackers += `        __ll_set_var("${key}", ${key});\n`;
     } else if (typeof value === 'boolean') {
-      cpp += `    bool ${key} = ${value ? 'true' : 'false'};\n`;
+      cppDecls += `bool ${key} = ${value ? 'true' : 'false'};\n`;
+      cppTrackers += `        __ll_set_var("${key}", ${key});\n`;
     }
   }
-  return cpp;
+
+  return `
+${cppDecls}
+
+struct __LL_Init {
+    __LL_Init() {
+${cppTrackers}
+    }
+} __ll_init_instance;
+`;
 }
 
 export async function POST(req: Request) {
@@ -40,32 +53,25 @@ export async function POST(req: Request) {
     // Generate C++ wrapper
     const cppInit = generateCppInit(parsedInput);
     
-    // We wrap the user's code in a main function
     const fullCode = `
-#include <iostream>
-#include <vector>
-#include <string>
-#include <unordered_map>
-#include <map>
-#include <set>
-#include <unordered_set>
+#include "LogicLens.h"
 
-using namespace std;
-
-int main() {
+// --- INJECTED GLOBAL INPUTS ---
 ${cppInit}
+// ------------------------------
 
-    // --- USER CODE ---
+// --- USER CODE ---
 ${code}
-    // -----------------
-
-    return 0;
-}
+// -----------------
 `;
 
-    // Create a temporary directory
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'logiclens-cpp-'));
-    const sourceFile = path.join(tempDir, 'main.cpp');
+    // Create a temporary directory in the project workspace to avoid OS AppLocker/Temp directory restrictions
+    const baseTempDir = path.join(process.cwd(), '.next', 'cache', 'logiclens-cpp');
+    if (!fs.existsSync(baseTempDir)) {
+      fs.mkdirSync(baseTempDir, { recursive: true });
+    }
+    const tempDir = fs.mkdtempSync(path.join(baseTempDir, 'run-'));
+    const sourceFile = path.join(tempDir, 'source.cpp');
     const exeFile = path.join(tempDir, 'main.exe');
     
     fs.writeFileSync(sourceFile, fullCode);
@@ -121,23 +127,28 @@ ${code}
         }, 5000);
     });
 
+    // Debugging logs
+    fs.writeFileSync(path.join(tempDir, 'debug.log'), `Output:\\n${execOutput}\\nError:\\n${execError}`);
+    fs.writeFileSync(path.join(tempDir, 'debug.log'), `Output:\n${execOutput}\nError:\n${execError}`);
+
     if (execError) {
       return NextResponse.json({ error: execError }, { status: 400 });
     }
 
     // Parse JSON lines from stdout
-    const events = execOutput.split('\\n')
-      .filter(line => line.trim().startsWith('{'))
+    const events = execOutput.split('\n')
       .map(line => {
-        try {
-          return JSON.parse(line);
-        } catch {
-          return null;
+        const trimmed = line.trim();
+        if (!trimmed) return null;
+        if (trimmed.startsWith('{')) {
+          try { return JSON.parse(trimmed); } catch (e) { /* fallback to text */ }
         }
+        // Convert any standard output (like cout) into an ANNOTATION event
+        return { type: "ANNOTATION", payload: { message: trimmed } };
       })
       .filter(e => e !== null);
 
-    return NextResponse.json({ events });
+    return NextResponse.json({ events, debugOutput: execOutput });
 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

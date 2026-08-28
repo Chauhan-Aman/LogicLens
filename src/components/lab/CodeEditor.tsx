@@ -37,6 +37,7 @@ export default function CodeEditor() {
     setUserCode,
     inputJson,
     setInputJson,
+    setTimeline,
     setDetection,
     setExecutionError,
     activeProblem,
@@ -110,7 +111,18 @@ export default function CodeEditor() {
           </span>
           <select 
             value={activeLanguage}
-            onChange={(e) => setActiveLanguage(e.target.value)}
+            onChange={(e) => {
+              const lang = e.target.value;
+              setActiveLanguage(lang);
+              if (activeProblem) {
+                const solution = activeProblem.solutions.find(s => s.language === lang);
+                if (solution) {
+                  setUserCode(solution.code);
+                  setTimeline([]);
+                  setExecutionError(null);
+                }
+              }
+            }}
             className="ml-2 bg-black/40 border border-white/10 text-white/70 text-xs rounded px-2 py-0.5 outline-none focus:border-white/30"
           >
             <option value="javascript">JavaScript</option>

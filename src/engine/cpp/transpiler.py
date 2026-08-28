@@ -17,7 +17,7 @@ def transpile(code):
         # We can use AST for safer traversal
         pass
         
-    def visit(node):
+    def visit(node, parent_kind=None):
         if node.location.file and node.location.file.name != 'tmp.cpp':
             return
             
@@ -25,35 +25,37 @@ def transpile(code):
             # We want to track this variable if it's a local variable (inside a function)
             if node.semantic_parent and node.semantic_parent.kind in [CursorKind.FUNCTION_DECL, CursorKind.CXX_METHOD, CursorKind.COMPOUND_STMT]:
                 name = node.spelling
-                # Find the semicolon ending this declaration
-                # We can inject `__ll_set_var("name", name);` after the semicolon
                 end_offset = node.extent.end.offset
-                # Find the next semicolon
                 semicolon_offset = code.find(';', end_offset)
                 if semicolon_offset != -1:
-                    # check if it's part of a for loop init: `for(int i=0;`
-                    # If it's a for loop, injecting after semicolon breaks the syntax.
-                    # We can use a comma: `int i=0, __ll_set_var("i", i)` -> wait, __ll_set_var returns void.
-                    
-                    # For simplicity, if it's not a for loop, inject after semicolon.
-                    parent_is_for = False
-                    p = node.lexical_parent
-                    if p and p.kind == CursorKind.FOR_STMT:
-                        parent_is_for = True
-                        
-                    if not parent_is_for:
+                    if parent_kind != CursorKind.FOR_STMT:
                         injection = f'\n__ll_set_var("{name}", {name});'
                         replacements.append((semicolon_offset + 1, injection))
         
-        # Track assignments
-        if node.kind == CursorKind.BINARY_OPERATOR:
-            # Check if it's an assignment
-            # libclang Python bindings don't directly expose operator kind easily, but we can check tokens
-            # ...
-            pass
+        if node.kind == CursorKind.FOR_STMT:
+            declared_vars = []
+            body_node = None
+            for child in node.get_children():
+                if child.kind == CursorKind.DECL_STMT:
+                    for c in child.get_children():
+                        if c.kind == CursorKind.VAR_DECL:
+                            declared_vars.append(c.spelling)
+                elif child.kind == CursorKind.COMPOUND_STMT:
+                    body_node = child
+                    
+            if declared_vars and body_node:
+                # Inject tracking at the start of the compound statement (after '{')
+                start_offset = body_node.extent.start.offset
+                brace_offset = code.find('{', start_offset)
+                if brace_offset != -1:
+                    injection = ''.join([f'\n__ll_set_var("{name}", {name});' for name in declared_vars])
+                    replacements.append((brace_offset + 1, injection))
+        next_parent = node.kind
+        if node.kind == CursorKind.DECL_STMT and parent_kind == CursorKind.FOR_STMT:
+            next_parent = CursorKind.FOR_STMT
             
         for child in node.get_children():
-            visit(child)
+            visit(child, next_parent)
             
     visit(tu.cursor)
     

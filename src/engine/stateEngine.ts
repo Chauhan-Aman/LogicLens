@@ -79,6 +79,11 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
         if (ev.variable !== undefined) {
           next.variables[ev.variable] = ev.value;
           next.annotation = `${ev.variable} = ${JSON.stringify(ev.value)}`;
+          
+          // If the variable is an array, automatically register it in the arrays namespace for the visualizer
+          if (Array.isArray(ev.value)) {
+            next.arrays[ev.variable] = { values: [...ev.value], highlights: [] };
+          }
         }
         break;
       }

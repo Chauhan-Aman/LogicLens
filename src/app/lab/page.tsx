@@ -15,7 +15,7 @@ import { PROBLEMS } from '@/data/index';
 const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
 
 export default function LabPage() {
-  const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection } = useLabStore();
+  const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, setActiveLanguage } = useLabStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
   const [diffFilter, setDiffFilter] = useState('All');
@@ -30,8 +30,14 @@ export default function LabPage() {
 
   function selectProblem(problem: Problem) {
     setActiveProblem(problem);
-    setActiveSolution(0);
-    setUserCode(problem.solutions[0]?.code ?? '');
+    
+    // Default to C++ solution if available
+    let defaultSolIdx = problem.solutions.findIndex(s => s.language === 'cpp');
+    if (defaultSolIdx === -1) defaultSolIdx = 0;
+    
+    setActiveSolution(defaultSolIdx);
+    setUserCode(problem.solutions[defaultSolIdx]?.code ?? '');
+    setActiveLanguage(problem.solutions[defaultSolIdx]?.language ?? 'javascript');
     setInputJson(problem.defaultInput);
     setTimeline([]);
     setExecutionError(null);
@@ -41,6 +47,7 @@ export default function LabPage() {
     if (!activeProblem) return;
     setActiveSolution(idx);
     setUserCode(activeProblem.solutions[idx]?.code ?? '');
+    setActiveLanguage(activeProblem.solutions[idx]?.language ?? 'javascript');
     setTimeline([]);
     setExecutionError(null);
   }
