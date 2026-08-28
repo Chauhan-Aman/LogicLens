@@ -16,11 +16,36 @@ def transpile(code):
     replacements = []
     
 
-        
+    def get_modified_var(n):
+        if n.kind == CursorKind.BINARY_OPERATOR:
+            children = list(n.get_children())
+            if len(children) >= 2 and children[0].kind == CursorKind.DECL_REF_EXPR:
+                lhs_tokens = list(children[0].get_tokens())
+                node_tokens = list(n.get_tokens())
+                if len(lhs_tokens) < len(node_tokens):
+                    op_token = node_tokens[len(lhs_tokens)].spelling
+                    if op_token in ['=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=']:
+                        return children[0].spelling
+        elif n.kind == CursorKind.UNARY_OPERATOR:
+            children = list(n.get_children())
+            if len(children) >= 1 and children[0].kind == CursorKind.DECL_REF_EXPR:
+                node_tokens = list(n.get_tokens())
+                if any(t.spelling in ['++', '--'] for t in node_tokens):
+                    return children[0].spelling
+        return None
+
     def visit(node, parent_kind=None):
         if node.location.file and node.location.file.name != 'tmp.cpp':
             return
             
+        mod_var = get_modified_var(node)
+        if mod_var and parent_kind == CursorKind.COMPOUND_STMT:
+            end_offset = node.extent.end.offset
+            semicolon_offset = code_bytes.find(b';', end_offset)
+            if semicolon_offset != -1:
+                injection = f'\n__ll_set_var("{mod_var}", {mod_var});'.encode('utf-8')
+                replacements.append((semicolon_offset + 1, injection))
+                
         if node.kind == CursorKind.VAR_DECL:
             # We want to track this variable if it's a local variable (inside a function)
             if node.semantic_parent and node.semantic_parent.kind in [CursorKind.FUNCTION_DECL, CursorKind.CXX_METHOD, CursorKind.COMPOUND_STMT]:
