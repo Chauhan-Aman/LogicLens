@@ -1,0 +1,21 @@
+{
+  "id": "best-time-to-buy-sell-stock",
+  "title": "Best Time to Buy and Sell Stock",
+  "difficulty": "Easy",
+  "tags": ["Array", "Sliding Window"],
+  "description": "You are given an array `prices` where `prices[i]` is the price of a given stock on the `i`th day.\n\nYou want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock.\n\nReturn the maximum profit you can achieve. If you cannot achieve any profit, return 0.",
+  "examples": [
+    { "input": "prices=[7,1,5,3,6,4]", "output": "5" },
+    { "input": "prices=[7,6,4,3,1]", "output": "0" }
+  ],
+  "solutions": [
+    {
+      "name": "Sliding Window (Optimal)",
+      "complexity": { "time": "O(n)", "space": "O(1)" },
+      "language": "javascript",
+      "code": "// Sliding Window — O(n)\nlet minPrice = Infinity;\nlet maxProfit = 0;\n\nfor (let i = 0; i < prices.length; i++) {\n  let price = prices[i];\n  if (price < minPrice) {\n    minPrice = price;\n    console.log(`New min price: ${minPrice}`);\n  } else {\n    let profit = price - minPrice;\n    if (profit > maxProfit) {\n      maxProfit = profit;\n      console.log(`New max profit: ${maxProfit}`);\n    }\n  }\n}\nreturn maxProfit;"
+    }
+  ],
+  "structures": ["array"],
+  "defaultInput": "{ \"prices\": [7, 1, 5, 3, 6, 4] }"
+}

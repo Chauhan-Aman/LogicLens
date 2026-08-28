@@ -1,0 +1,21 @@
+{
+  "id": "contains-duplicate",
+  "title": "Contains Duplicate",
+  "difficulty": "Easy",
+  "tags": ["Array", "HashSet", "Sorting"],
+  "description": "Given an integer array `nums`, return `true` if any value appears at least twice in the array, and return `false` if every element is distinct.",
+  "examples": [
+    { "input": "nums=[1,2,3,1]", "output": "true" },
+    { "input": "nums=[1,2,3,4]", "output": "false" }
+  ],
+  "solutions": [
+    {
+      "name": "HashSet",
+      "complexity": { "time": "O(n)", "space": "O(n)" },
+      "language": "javascript",
+      "code": "// HashSet — O(n)\nconst nums = __ll.array('nums', __input.nums);\nconst seen = __ll.set('seen');\n\nfor (let i = 0; i < nums.length; i++) {\n  __ll.setVar('i', i);\n  const num = nums[i];\n  __ll.setVar('current', num);\n  if (seen.has(num)) {\n    __ll.note(`Duplicate found: ${num}`);\n    return true;\n  }\n  seen.add(num);\n}\n__ll.note('No duplicates found');\nreturn false;"
+    }
+  ],
+  "structures": ["array", "hashmap"],
+  "defaultInput": "{ \"nums\": [1, 2, 3, 1] }"
+}

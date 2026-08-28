@@ -1,0 +1,27 @@
+{
+  "id": "two-sum",
+  "title": "Two Sum",
+  "difficulty": "Easy",
+  "tags": ["Array", "HashMap"],
+  "description": "Given an array of integers `nums` and an integer `target`, return the indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nReturn the answer in any order.",
+  "examples": [
+    { "input": "nums=[2,7,11,15], target=9", "output": "[0,1]" },
+    { "input": "nums=[3,2,4], target=6", "output": "[1,2]" }
+  ],
+  "solutions": [
+    {
+      "name": "Brute Force",
+      "complexity": { "time": "O(n²)", "space": "O(1)" },
+      "language": "javascript",
+      "code": "// Brute Force — O(n²)\nfor (let i = 0; i < nums.length; i++) {\n  for (let j = i + 1; j < nums.length; j++) {\n    let sum = nums[i] + nums[j];\n    if (sum === target) {\n      console.log(`Found! indices [${i}, ${j}]`);\n      return [i, j];\n    }\n  }\n}"
+    },
+    {
+      "name": "HashMap (Optimal)",
+      "complexity": { "time": "O(n)", "space": "O(n)" },
+      "language": "javascript",
+      "code": "// HashMap — O(n)\nlet map = new Map();\n\nfor (let i = 0; i < nums.length; i++) {\n  let num = nums[i];\n  let complement = target - num;\n  if (map.has(complement)) {\n    console.log(`Found complement ${complement} at index ${map.get(complement)}!`);\n    return [map.get(complement), i];\n  }\n  map.set(num, i);\n}"
+    }
+  ],
+  "structures": ["array", "hashmap"],
+  "defaultInput": "{ \"nums\": [2, 7, 11, 15], \"target\": 9 }"
+}

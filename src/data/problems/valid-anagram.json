@@ -1,0 +1,21 @@
+{
+  "id": "valid-anagram",
+  "title": "Valid Anagram",
+  "difficulty": "Easy",
+  "tags": ["String", "HashMap", "Sorting"],
+  "description": "Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise.\n\nAn anagram is a word or phrase formed by rearranging the letters of a different word, using all the original letters exactly once.",
+  "examples": [
+    { "input": "s=\"anagram\", t=\"nagaram\"", "output": "true" },
+    { "input": "s=\"rat\", t=\"car\"", "output": "false" }
+  ],
+  "solutions": [
+    {
+      "name": "HashMap Frequency Count",
+      "complexity": { "time": "O(n)", "space": "O(1)" },
+      "language": "javascript",
+      "code": "// Frequency HashMap — O(n)\nconst s = __input.s;\nconst t = __input.t;\nconst freq = __ll.map('freq');\n\n__ll.note(`Counting chars in s=\"${s}\"`);\nfor (let i = 0; i < s.length; i++) {\n  __ll.setVar('i', i);\n  __ll.setVar('char', s[i]);\n  const cur = freq.get(s[i]) || 0;\n  freq.set(s[i], cur + 1);\n}\n\n__ll.note(`Decrementing with t=\"${t}\"`);\nfor (let i = 0; i < t.length; i++) {\n  __ll.setVar('i', i);\n  __ll.setVar('char', t[i]);\n  const cur = freq.get(t[i]) || 0;\n  if (cur === 0) {\n    __ll.note(`'${t[i]}' not found — not an anagram`);\n    return false;\n  }\n  freq.set(t[i], cur - 1);\n}\n\n__ll.note('Valid anagram!');\nreturn true;"
+    }
+  ],
+  "structures": ["hashmap"],
+  "defaultInput": "{ \"s\": \"anagram\", \"t\": \"nagaram\" }"
+}

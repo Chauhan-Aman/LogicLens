@@ -1,0 +1,21 @@
+{
+  "id": "binary-search",
+  "title": "Binary Search",
+  "difficulty": "Easy",
+  "tags": ["Array", "Binary Search"],
+  "description": "Given an array of integers `nums` which is sorted in ascending order, and an integer `target`, write a function to search `target` in `nums`. If `target` exists, return its index. Otherwise, return `-1`.\n\nYou must write an algorithm with `O(log n)` runtime complexity.",
+  "examples": [
+    { "input": "nums=[-1,0,3,5,9,12], target=9", "output": "4" },
+    { "input": "nums=[-1,0,3,5,9,12], target=2", "output": "-1" }
+  ],
+  "solutions": [
+    {
+      "name": "Binary Search",
+      "complexity": { "time": "O(log n)", "space": "O(1)" },
+      "language": "javascript",
+      "code": "// Binary Search — O(log n)\nconst nums = __ll.array('nums', __input.nums);\nconst target = __input.target;\nlet left = 0;\nlet right = nums.length - 1;\n\nwhile (left <= right) {\n  const mid = Math.floor((left + right) / 2);\n  __ll.setVar('left', left);\n  __ll.setVar('right', right);\n  __ll.setVar('mid', mid);\n  const midVal = nums[mid];\n  __ll.setVar('midVal', midVal);\n  const cmp = __ll.compare(midVal, target, midVal === target);\n  if (cmp) {\n    __ll.note(`Found target ${target} at index ${mid}`);\n    return mid;\n  } else if (midVal < target) {\n    left = mid + 1;\n    __ll.note(`${midVal} < ${target}, search right half`);\n  } else {\n    right = mid - 1;\n    __ll.note(`${midVal} > ${target}, search left half`);\n  }\n}\nreturn -1;"
+    }
+  ],
+  "structures": ["array"],
+  "defaultInput": "{ \"nums\": [-1, 0, 3, 5, 9, 12], \"target\": 9 }"
+}
