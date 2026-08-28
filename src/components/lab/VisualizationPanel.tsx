@@ -101,6 +101,8 @@ export default function VisualizationPanel() {
     .filter(([_, v]) => typeof v === 'number')
     .map(([k, _]) => k);
 
+  const arrayNames = Object.keys(snap.arrays);
+
   // Build per-array pointer map from variables
   const pointers: Record<string, number> = {};
   for (const [k, v] of Object.entries(snap.variables)) {
