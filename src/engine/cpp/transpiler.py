@@ -4,18 +4,18 @@ from clang.cindex import CursorKind, TokenKind
 
 def transpile(code):
     idx = clang.cindex.Index.create()
-    tu = idx.parse('tmp.cpp', args=['-std=c++17'], unsaved_files=[('tmp.cpp', code)])
     
+    # Write to tmp.cpp safely
+    import os
+    with open('tmp.cpp', 'wb') as f:
+        f.write(code.encode('utf-8'))
+        
+    tu = idx.parse('tmp.cpp', args=['-std=c++17'])
+    
+    code_bytes = code.encode('utf-8')
     replacements = []
     
-    # We will traverse the tokens directly to find things like `var = value;`
-    # and inject tracking calls after the semicolon.
-    tokens = list(tu.get_tokens(extent=tu.cursor.extent))
-    
-    for i, token in enumerate(tokens):
-        # Identify Variable Declarations: type name = value;
-        # We can use AST for safer traversal
-        pass
+
         
     def visit(node, parent_kind=None):
         if node.location.file and node.location.file.name != 'tmp.cpp':
@@ -26,10 +26,10 @@ def transpile(code):
             if node.semantic_parent and node.semantic_parent.kind in [CursorKind.FUNCTION_DECL, CursorKind.CXX_METHOD, CursorKind.COMPOUND_STMT]:
                 name = node.spelling
                 end_offset = node.extent.end.offset
-                semicolon_offset = code.find(';', end_offset)
+                semicolon_offset = code_bytes.find(b';', end_offset)
                 if semicolon_offset != -1:
                     if parent_kind != CursorKind.FOR_STMT:
-                        injection = f'\n__ll_set_var("{name}", {name});'
+                        injection = f'\n__ll_set_var("{name}", {name});'.encode('utf-8')
                         replacements.append((semicolon_offset + 1, injection))
         
         if node.kind == CursorKind.FOR_STMT:
@@ -45,27 +45,27 @@ def transpile(code):
                     
             # Inject blockEnter('loop', 'for') BEFORE the loop
             start_offset = node.extent.start.offset
-            replacements.append((start_offset, '\n__ll_block_enter("loop", "for");\n'))
+            replacements.append((start_offset, b'\n__ll_block_enter("loop", "for");\n'))
 
             # Inject blockExit() AFTER the loop
             end_offset = node.extent.end.offset
-            replacements.append((end_offset, '\n__ll_block_exit();\n'))
+            replacements.append((end_offset, b'\n__ll_block_exit();\n'))
             
             if body_node:
                 # Inject iteration tracking at start of body
                 start_body_offset = body_node.extent.start.offset
-                brace_offset = code.find('{', start_body_offset)
+                brace_offset = code_bytes.find(b'{', start_body_offset)
                 if brace_offset != -1:
                     injection = '\n__ll_block_enter("iteration");'
                     if declared_vars:
                         injection += ''.join([f'\n__ll_set_var("{name}", {name});' for name in declared_vars])
-                    replacements.append((brace_offset + 1, injection))
+                    replacements.append((brace_offset + 1, injection.encode('utf-8')))
                 
                 # Inject blockExit() at end of body
                 end_body_offset = body_node.extent.end.offset
-                closing_brace_offset = code.rfind('}', start_body_offset, end_body_offset)
+                closing_brace_offset = code_bytes.rfind(b'}', start_body_offset, end_body_offset)
                 if closing_brace_offset != -1:
-                    replacements.append((closing_brace_offset, '\n__ll_block_exit();\n'))
+                    replacements.append((closing_brace_offset, b'\n__ll_block_exit();\n'))
         next_parent = node.kind
         if node.kind == CursorKind.DECL_STMT and parent_kind == CursorKind.FOR_STMT:
             next_parent = CursorKind.FOR_STMT
@@ -76,12 +76,16 @@ def transpile(code):
     visit(tu.cursor)
     
     # Apply replacements
+    # To handle multiple insertions at the exact same offset, we sort by offset descending.
+    # Python's sort is stable, but we are inserting backwards, so if offset A == offset B,
+    # the one that comes first in the array will be processed LAST, meaning it ends up FIRST in the final string.
+    # Let's just safely apply them:
     replacements.sort(key=lambda x: x[0], reverse=True)
-    res = code
+    res = code_bytes
     for offset, text in replacements:
         res = res[:offset] + text + res[offset:]
         
-    return '#include "LogicLens.h"\n' + res
+    return '#include "LogicLens.h"\n' + res.decode('utf-8')
 
 if __name__ == '__main__':
     with open(sys.argv[1], 'r') as f:
