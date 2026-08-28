@@ -421,11 +421,9 @@ export default function FlowGraph() {
       ref={containerRef}
       className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'relative w-full h-full'} bg-[#050508] overflow-hidden select-none p-12 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       onWheel={(e) => {
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-          setScale(s => Math.min(Math.max(s * zoomFactor, 0.4), 2));
-        }
+        e.preventDefault();
+        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+        setScale(s => Math.min(Math.max(s * zoomFactor, 0.4), 2));
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
