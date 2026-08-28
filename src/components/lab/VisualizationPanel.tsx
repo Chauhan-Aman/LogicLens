@@ -59,14 +59,47 @@ export default function VisualizationPanel() {
 
   const hasArrays = Object.keys(snap.arrays).length > 0;
   const hasMapsOrSets = Object.keys(snap.maps).length > 0 || Object.keys(snap.sets).length > 0;
-  const hasVars = Object.keys(snap.variables).length > 0;
   const hasStack = snap.callStack.length > 0;
 
-  // Determine which variable names are "pointers" (index-like integers used on an array)
-  const arrayNames = Object.keys(snap.arrays);
+  // Track loop iterations
+  const blockStack: { type: string, iters: number }[] = [];
+  for (let i = 0; i <= currentStep; i++) {
+    const ev = timeline[i].event;
+    if (ev.type === 'BLOCK_ENTER') {
+       if (ev.label === 'loop') {
+          blockStack.push({ type: 'loop', iters: 0 });
+       } else if (ev.label === 'iteration') {
+          if (blockStack.length > 0) {
+             // Increment iteration count on the nearest loop
+             for (let j = blockStack.length - 1; j >= 0; j--) {
+               if (blockStack[j].type === 'loop') {
+                 blockStack[j].iters++;
+                 break;
+               }
+             }
+          }
+          blockStack.push({ type: 'iteration', iters: 0 });
+       } else {
+          blockStack.push({ type: 'other', iters: 0 });
+       }
+    } else if (ev.type === 'BLOCK_EXIT') {
+       blockStack.pop();
+    }
+  }
+
+  const deepestLoop = [...blockStack].reverse().find(b => b.type === 'loop');
+  const iterDisplay = deepestLoop ? deepestLoop.iters : 0;
+
+  const displayVariables = { ...snap.variables };
+  if (iterDisplay > 0) {
+    displayVariables['ITERATION'] = iterDisplay;
+  }
+
+  const hasVars = Object.keys(displayVariables).length > 0;
+
   const pointerNames = Object.entries(snap.variables)
-    .filter(([, v]) => typeof v === 'number' && Number.isInteger(v as number) && (v as number) >= 0 && (v as number) < 10000)
-    .map(([k]) => k);
+    .filter(([_, v]) => typeof v === 'number')
+    .map(([k, _]) => k);
 
   // Build per-array pointer map from variables
   const pointers: Record<string, number> = {};
@@ -148,7 +181,7 @@ export default function VisualizationPanel() {
         {hasVars && (
           <Section title="Variables" color="cyan">
             <VariableChips
-              variables={snap.variables}
+              variables={displayVariables}
               changedVariable={snap.changedVariable}
               pointerNames={pointerNames}
             />
