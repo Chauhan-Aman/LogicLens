@@ -64,6 +64,14 @@ inline void __ll_set_var(const std::string& name, const T& value) {
     std::cout << "{\"type\": \"VARIABLE_UPDATE\", \"variable\": \"" << name << "\", \"value\": " << __ll_to_json(value) << "}\n" << std::flush;
 }
 
+inline void __ll_block_enter(const std::string& type, const std::string& blockType = "", const std::string& blockLabel = "") {
+    std::cout << "{\"type\": \"BLOCK_ENTER\", \"blockType\": \"" << type << "\", \"blockLabel\": \"" << blockLabel << "\"}\n" << std::flush;
+}
+
+inline void __ll_block_exit() {
+    std::cout << "{\"type\": \"BLOCK_EXIT\"}\n" << std::flush;
+}
+
 template <typename T>
 inline void __ll_array_access(const std::string& name, const T& index) {
     std::cout << "{\"type\": \"ARRAY_ACCESS\", \"array\": \"" << name << "\", \"index\": " << index << "}\n" << std::flush;

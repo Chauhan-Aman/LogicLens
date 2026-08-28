@@ -43,13 +43,29 @@ def transpile(code):
                 elif child.kind == CursorKind.COMPOUND_STMT:
                     body_node = child
                     
-            if declared_vars and body_node:
-                # Inject tracking at the start of the compound statement (after '{')
-                start_offset = body_node.extent.start.offset
-                brace_offset = code.find('{', start_offset)
+            # Inject blockEnter('loop', 'for') BEFORE the loop
+            start_offset = node.extent.start.offset
+            replacements.append((start_offset, '\n__ll_block_enter("loop", "for");\n'))
+
+            # Inject blockExit() AFTER the loop
+            end_offset = node.extent.end.offset
+            replacements.append((end_offset, '\n__ll_block_exit();\n'))
+            
+            if body_node:
+                # Inject iteration tracking at start of body
+                start_body_offset = body_node.extent.start.offset
+                brace_offset = code.find('{', start_body_offset)
                 if brace_offset != -1:
-                    injection = ''.join([f'\n__ll_set_var("{name}", {name});' for name in declared_vars])
+                    injection = '\n__ll_block_enter("iteration");'
+                    if declared_vars:
+                        injection += ''.join([f'\n__ll_set_var("{name}", {name});' for name in declared_vars])
                     replacements.append((brace_offset + 1, injection))
+                
+                # Inject blockExit() at end of body
+                end_body_offset = body_node.extent.end.offset
+                closing_brace_offset = code.rfind('}', start_body_offset, end_body_offset)
+                if closing_brace_offset != -1:
+                    replacements.append((closing_brace_offset, '\n__ll_block_exit();\n'))
         next_parent = node.kind
         if node.kind == CursorKind.DECL_STMT and parent_kind == CursorKind.FOR_STMT:
             next_parent = CursorKind.FOR_STMT
