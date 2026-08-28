@@ -440,7 +440,7 @@ export default function FlowGraph() {
       />
 
       <div 
-        className="relative flex flex-col items-center gap-0 z-10 w-full min-h-max origin-center transition-transform duration-75"
+        className="relative flex flex-col items-center gap-0 z-10 w-full min-h-max origin-center"
         style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}
       >
         <div className="px-4 py-1.5 border border-emerald-500/30 text-emerald-400 text-xs font-semibold rounded bg-emerald-500/10 mb-2 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
