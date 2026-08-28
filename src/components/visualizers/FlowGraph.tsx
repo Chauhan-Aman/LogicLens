@@ -53,12 +53,17 @@ function buildExecutionTree(timeline: StateSnapshot[]): ExecutionNode {
         stack.pop();
       }
     } else {
-      currentBlock.children.push({
-        id: `step-${snap.step}`,
-        type: 'step',
-        snapshots: [snap],
-        children: []
-      });
+      const lastChild = currentBlock.children[currentBlock.children.length - 1];
+      if (lastChild && lastChild.type === 'step' && snap.event.type === 'VARIABLE_UPDATE' && lastChild.snapshots[lastChild.snapshots.length - 1].event.type === 'VARIABLE_UPDATE') {
+        lastChild.snapshots.push(snap);
+      } else {
+        currentBlock.children.push({
+          id: `step-${snap.step}`,
+          type: 'step',
+          snapshots: [snap],
+          children: []
+        });
+      }
     }
   }
   return root;
@@ -67,23 +72,27 @@ function buildExecutionTree(timeline: StateSnapshot[]): ExecutionNode {
 // ─── RECURSIVE NODE COMPONENTS ────────────────────────────────────────────────
 
 function TreeStep({ node, currentStep, setCurrentStep }: { node: ExecutionNode, currentStep: number, setCurrentStep: (s: number) => void }) {
-  const snap = node.snapshots[0];
-  if (!snap) return null;
-  const isActive = currentStep === snap.step;
+  if (node.snapshots.length === 0) return null;
+  const isActive = node.snapshots.some(s => s.step === currentStep);
+  
+  // Use the last snapshot for getting the core event details (e.g. clicking it jumps to the last step in the group)
+  const mainSnap = node.snapshots[node.snapshots.length - 1];
   
   return (
     <div className="flex flex-col items-center">
       <div className="w-[1px] h-4 bg-white/10" />
-      <div className="w-4 h-4 rounded-sm border border-white/20 bg-[#0a0a0f] flex items-center justify-center text-white/40 mb-1 z-10 hover:bg-white/10 hover:text-white transition-colors cursor-pointer">
+      <div 
+        onClick={() => setCurrentStep(mainSnap.step)}
+        className="w-4 h-4 rounded-sm border border-white/20 bg-[#0a0a0f] flex items-center justify-center text-white/40 mb-1 z-10 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+      >
         <Plus size={10} />
       </div>
       <div className="w-[1px] h-4 bg-white/10" />
-      <div className={`shrink-0 ${isActive ? 'node-active' : ''}`}>
+      <div className={`shrink-0 ${isActive ? 'node-active' : ''}`} onClick={() => setCurrentStep(mainSnap.step)}>
         <FlowNode 
-          nodeData={{ id: node.id, type: 'step', snapshots: [snap] }} 
+          nodeData={{ id: node.id, type: 'step', snapshots: node.snapshots }} 
           isActive={isActive} 
           currentStep={currentStep}
-          onClick={(step) => setCurrentStep(step)}
         />
       </div>
     </div>
@@ -125,7 +134,10 @@ function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: Exe
   };
   extractVars(node);
 
-  const title = index !== undefined ? `Iteration ${index}` : 'Iteration';
+  const varsString = Array.from(varsSet.entries()).map(([k, v]) => `${k} = ${v}`).join(', ');
+  const title = index !== undefined 
+    ? (varsString ? `Iteration ${index} (${varsString})` : `Iteration ${index}`) 
+    : (varsString ? `Iteration (${varsString})` : 'Iteration');
 
   const isSuccess = lastComparison && (lastComparison as any).event.result === true;
   const borderColor = isActive ? 'border-indigo-500 ring-1 ring-indigo-500/50 bg-indigo-500/10' : 'border-white/10 bg-[#111115] hover:border-white/20';
