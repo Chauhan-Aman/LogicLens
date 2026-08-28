@@ -144,47 +144,53 @@ function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: Exe
   const borderColor = isActive ? 'border-indigo-500 ring-1 ring-indigo-500/50 bg-indigo-500/10' : 'border-white/10 bg-[#111115] hover:border-white/20';
 
   return (
-    <div className="flex flex-col items-center w-full relative">
-      <div className="w-[1px] h-4 bg-white/10" />
-      <div 
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={`relative w-[340px] rounded-lg border ${borderColor} p-3 flex items-center justify-between cursor-pointer transition-all duration-200 z-10 shadow-lg`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center text-indigo-400">
-            <RefreshCcw size={12} />
+    <div className="grid grid-cols-[1fr_340px_1fr] w-full">
+      <div /> {/* Left empty space to keep center balanced */}
+      
+      <div className="flex flex-col items-center w-full">
+        <div className="w-[1px] h-4 bg-white/10" />
+        <div 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={`relative w-[340px] rounded-lg border ${borderColor} p-3 flex items-center justify-between cursor-pointer transition-all duration-200 z-10 shadow-lg`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center text-indigo-400">
+              <RefreshCcw size={12} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-mono font-bold text-white/90 truncate max-w-[200px]">{title}</span>
+              <span className="text-[10px] text-white/40 uppercase tracking-wider">Iter Cycle</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-mono font-bold text-white/90 truncate max-w-[200px]">{title}</span>
-            <span className="text-[10px] text-white/40 uppercase tracking-wider">Iter Cycle</span>
+          <div className="flex items-center gap-2">
+             {isSuccess && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+             {isExpanded ? <ChevronDown size={14} className="text-white/40" /> : <ChevronRight size={14} className="text-white/40" />}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-           {isSuccess && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
-           {isExpanded ? <ChevronDown size={14} className="text-white/40" /> : <ChevronRight size={14} className="text-white/40" />}
         </div>
       </div>
 
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div 
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            className="absolute left-[50%] ml-[170px] top-4 flex items-start z-0"
-          >
-            {/* Horizontal branch line */}
-            <div className="w-8 h-[1px] bg-indigo-500/30 mt-[22px]" />
-            
-            {/* Children container with vertical spine */}
-            <div className="flex flex-col items-center relative border-l border-indigo-500/30 pl-6 py-2 bg-indigo-500/[0.02] rounded-r-2xl border-t border-b min-w-[300px]">
-              {node.children.map(child => (
-                 <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="flex items-start">
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div 
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 'auto' }}
+              exit={{ opacity: 0, width: 0 }}
+              className="flex items-start overflow-hidden pt-4"
+            >
+              {/* Horizontal branch line */}
+              <div className="w-8 h-[1px] bg-indigo-500/30 mt-[22px] shrink-0" />
+              
+              {/* Children container with vertical spine */}
+              <div className="flex flex-col items-center relative border-l border-indigo-500/30 pl-6 py-2 bg-indigo-500/[0.02] rounded-r-2xl border-t border-b min-w-[300px]">
+                {node.children.map(child => (
+                   <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -445,7 +451,7 @@ export default function FlowGraph() {
         </div>
       </div>
 
-      <div className={`fixed ${isFullscreen ? 'bottom-8 right-8' : 'bottom-6 right-6'} flex flex-col gap-2 bg-black/50 p-2 rounded-lg border border-white/10 backdrop-blur-md z-50`}>
+      <div className={`absolute ${isFullscreen ? 'top-8 right-8' : 'top-6 right-6'} flex flex-col gap-2 bg-black/50 p-2 rounded-lg border border-white/10 backdrop-blur-md z-50`}>
         <button title="Zoom In" className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" onClick={() => setScale(s => Math.min(s * 1.2, 2))}>+</button>
         <button title="Zoom Out" className="text-white/50 hover:text-white flex items-center justify-center w-6 h-6" onClick={() => setScale(s => Math.max(s * 0.8, 0.4))}>-</button>
         <button title="Reset Zoom" className="text-[10px] font-mono text-white/50 hover:text-white mt-1" onClick={() => setScale(1)}>1:1</button>
