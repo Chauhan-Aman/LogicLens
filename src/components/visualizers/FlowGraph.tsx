@@ -1,9 +1,10 @@
 'use client';
 
 import { useLabStore } from '@/store/labStore';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import FlowNode from './FlowNode';
 import { Plus } from 'lucide-react';
+import type { StateSnapshot } from '@/engine/events';
 
 export default function FlowGraph() {
   const { timeline, currentStep, setCurrentStep } = useLabStore();
@@ -13,15 +14,42 @@ export default function FlowGraph() {
   const [isDragging, setIsDragging] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
 
-  // Filter out pure variable updates to keep the graph readable, unless very short trace.
-  const nodes = timeline.length < 15 
-    ? timeline 
-    : timeline.filter(s => 
-        s.event.type !== 'VARIABLE_UPDATE' && 
-        s.event.type !== 'ANNOTATION' &&
-        s.event.type !== 'BLOCK_EXIT' &&
-        s.event.type !== 'FUNCTION_EXIT'
-      );
+  // Aggregate timeline into logical groups (iterations/blocks)
+  const aggregatedNodes = useMemo(() => {
+    if (timeline.length === 0) return [];
+
+    const result: { id: string; type: string; label?: string; snapshots: StateSnapshot[] }[] = [];
+    let currentGroup: { id: string; type: string; label?: string; snapshots: StateSnapshot[] } | null = null;
+    let groupId = 0;
+
+    for (const snap of timeline) {
+      if (snap.event.type === 'BLOCK_ENTER' && snap.event.blockType === 'iteration') {
+        // Start a new iteration group
+        if (currentGroup) result.push(currentGroup);
+        currentGroup = { id: `iter-${groupId++}`, type: 'iteration', snapshots: [snap] };
+      } else if (snap.event.type === 'FUNCTION_ENTER') {
+        if (currentGroup) result.push(currentGroup);
+        currentGroup = { id: `fn-${groupId++}`, type: 'function', label: snap.event.fn, snapshots: [snap] };
+      } else if (snap.event.type === 'BLOCK_EXIT' || snap.event.type === 'FUNCTION_EXIT') {
+        if (currentGroup) {
+          currentGroup.snapshots.push(snap);
+          result.push(currentGroup);
+          currentGroup = null;
+        }
+      } else {
+        // Standard step
+        if (currentGroup) {
+          currentGroup.snapshots.push(snap);
+        } else {
+          // If no active group, make a standalone node
+          result.push({ id: `step-${groupId++}`, type: 'step', snapshots: [snap] });
+        }
+      }
+    }
+    
+    if (currentGroup) result.push(currentGroup);
+    return result;
+  }, [timeline]);
 
   // Auto-scroll logic (only vertically in this unrolled list)
   useEffect(() => {
@@ -79,12 +107,12 @@ export default function FlowGraph() {
           Trigger Run
         </div>
 
-        {nodes.map((snap, index) => {
-          const isActive = currentStep === snap.step;
-          const isLast = index === nodes.length - 1;
+        {aggregatedNodes.map((node, index) => {
+          // A group is "active" if the current step falls within its snapshots
+          const isActive = node.snapshots.some(s => s.step === currentStep);
 
           return (
-            <div key={snap.step} className="flex flex-col items-center">
+            <div key={node.id} className="flex flex-col items-center">
               {/* Vertical connecting line from above */}
               <div className="w-[1px] h-6 bg-white/10" />
               
@@ -98,9 +126,10 @@ export default function FlowGraph() {
               {/* The Node Card */}
               <div className={`shrink-0 ${isActive ? 'node-active' : ''}`}>
                 <FlowNode 
-                  snap={snap} 
+                  nodeData={node} 
                   isActive={isActive} 
-                  onClick={() => setCurrentStep(snap.step)}
+                  currentStep={currentStep}
+                  onClick={(step) => setCurrentStep(step)}
                 />
               </div>
             </div>
