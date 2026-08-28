@@ -1,24 +1,5 @@
-
-#include "LogicLens.h"
-
-// --- INJECTED GLOBAL INPUTS ---
-
-std::string s = "anagram";
-std::string t = "nagaram";
-
-
-struct __LL_Init {
-    __LL_Init() {
-        __ll_set_var("s", s);
-        __ll_set_var("t", t);
-
-    }
-} __ll_init_instance;
-
-// ------------------------------
-
-// --- USER CODE ---
-if (s.length() != t.length()) {
+const req = {
+  code: `if (s.length() != t.length()) {
   __ll_note("Lengths differ, not an anagram");
   return false;
 }
@@ -42,5 +23,13 @@ for (int i = 0; i < s.length(); i++) {
 }
 
 __ll_note("Valid anagram!");
-return true;
-// -----------------
+return true;`,
+  input: JSON.stringify({ s: 'anagram', t: 'nagaram' }),
+  language: 'cpp'
+};
+
+fetch('http://localhost:3000/api/execute', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(req)
+}).then(res => res.json()).then(console.log).catch(console.error);
