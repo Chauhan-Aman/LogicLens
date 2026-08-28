@@ -134,6 +134,60 @@ export function transpileCode(code: string): string {
           ]);
         },
 
+        // Track Loops (For, While, DoWhile, ForIn, ForOf)
+        'ForStatement|WhileStatement|DoWhileStatement|ForInStatement|ForOfStatement'(path: any) {
+          if (path.node.loc === null) return;
+          
+          const loopType = path.node.type.replace('Statement', '').toLowerCase(); // 'for', 'while', etc.
+          
+          // 1. Inject blockEnter('loop', type) BEFORE the loop
+          const enterCall = t.expressionStatement(
+            t.callExpression(
+              t.memberExpression(t.identifier('__ll'), t.identifier('blockEnter')),
+              [t.stringLiteral('loop'), t.stringLiteral(loopType)]
+            )
+          );
+          enterCall.loc = null as any;
+          path.insertBefore(enterCall);
+
+          // 2. Inject blockExit() AFTER the loop
+          const exitCall = t.expressionStatement(
+            t.callExpression(
+              t.memberExpression(t.identifier('__ll'), t.identifier('blockExit')),
+              []
+            )
+          );
+          exitCall.loc = null as any;
+          path.insertAfter(exitCall);
+
+          // 3. Inject blockEnter('iteration') at the START of the loop body
+          // We must ensure the body is a BlockStatement so we can insert into it.
+          path.ensureBlock();
+          const body = path.node.body;
+          if (body && body.body) {
+            const iterEnterCall = t.expressionStatement(
+              t.callExpression(
+                t.memberExpression(t.identifier('__ll'), t.identifier('blockEnter')),
+                [t.stringLiteral('iteration')]
+              )
+            );
+            iterEnterCall.loc = null as any;
+            body.body.unshift(iterEnterCall);
+            
+            // To ensure blockExit is called even on 'continue', we'll rely on the 
+            // state engine to auto-close 'iteration' blocks when a new one starts or the loop exits.
+            // But for standard flow, we insert one at the end of the block.
+            const iterExitCall = t.expressionStatement(
+              t.callExpression(
+                t.memberExpression(t.identifier('__ll'), t.identifier('blockExit')),
+                []
+              )
+            );
+            iterExitCall.loc = null as any;
+            body.body.push(iterExitCall);
+          }
+        },
+
         // Intercept new Map() and new Set() to return our tracked proxies
         NewExpression(path: any) {
           if (path.node.loc === null) return;

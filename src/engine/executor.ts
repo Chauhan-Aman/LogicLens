@@ -259,6 +259,12 @@ export async function executeCode(userCode: string, inputJson: string, language:
     merge: (arrayName: string, start: number, end: number) => {
       emit({ type: 'ARRAY_MERGE', array: arrayName, rangeStart: start, rangeEnd: end });
     },
+    blockEnter: (type: string, label?: string) => {
+      emit({ type: 'BLOCK_ENTER', blockType: type, blockLabel: label });
+    },
+    blockExit: () => {
+      emit({ type: 'BLOCK_EXIT' });
+    }
   };
 
   let returnValue: unknown;

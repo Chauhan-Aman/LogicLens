@@ -33,10 +33,15 @@ export type EventType =
   | 'ARRAY_SPLIT'
   | 'ARRAY_MERGE'
   | 'RECURSIVE_CALL'
-  | 'RECURSIVE_RETURN';
+  | 'RECURSIVE_RETURN'
+  | 'BLOCK_ENTER'
+  | 'BLOCK_EXIT';
 
 export interface ExecutionEvent {
   type: EventType;
+  // Block events
+  blockType?: string; // 'for', 'while', 'if'
+  blockLabel?: string;
   // Variable events
   variable?: string;
   value?: unknown;

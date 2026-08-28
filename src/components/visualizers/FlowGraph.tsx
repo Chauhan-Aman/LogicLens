@@ -1,103 +1,83 @@
 'use client';
 
 import { useLabStore } from '@/store/labStore';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import FlowNode from './FlowNode';
 import type { StateSnapshot } from '@/engine/events';
+import { ArrowRight } from 'lucide-react';
 
-interface LayoutNode {
+interface ExecutionNode {
   id: string;
-  snap: StateSnapshot;
-  x: number;
-  y: number;
+  type: 'function' | 'loop' | 'iteration' | 'step';
+  label?: string;
+  children: ExecutionNode[];
+  snapshots: StateSnapshot[];
 }
 
-interface LayoutEdge {
-  id: string;
-  source: LayoutNode;
-  target: LayoutNode;
-}
+function buildExecutionTree(timeline: StateSnapshot[]): ExecutionNode {
+  const root: ExecutionNode = { id: 'root', type: 'function', label: 'Program', children: [], snapshots: [] };
+  const stack = [root];
 
-const NODE_WIDTH = 160;
-const NODE_HEIGHT = 90;
-const X_SPACING = 40;
-const Y_SPACING = 60;
+  for (const snap of timeline) {
+    const currentBlock = stack[stack.length - 1];
+
+    if (snap.event.type === 'FUNCTION_ENTER') {
+      const fnNode: ExecutionNode = { 
+        id: `fn-${snap.step}`, 
+        type: 'function', 
+        label: `${snap.event.fn}()`, 
+        children: [], 
+        snapshots: [] 
+      };
+      currentBlock.children.push(fnNode);
+      stack.push(fnNode);
+    } else if (snap.event.type === 'FUNCTION_EXIT') {
+      // auto-close any unclosed loops/iterations in this function
+      while (stack.length > 1 && stack[stack.length - 1].type !== 'function') {
+        stack.pop();
+      }
+      if (stack.length > 1) stack.pop(); // pop the function itself
+    } else if (snap.event.type === 'BLOCK_ENTER') {
+      // If we see an 'iteration', auto-close the previous 'iteration' if it wasn't closed (e.g. continue)
+      if (snap.event.blockType === 'iteration' && currentBlock.type === 'iteration') {
+        stack.pop();
+      }
+
+      const blockNode: ExecutionNode = { 
+        id: `block-${snap.step}`, 
+        type: (snap.event.blockType as any) || 'loop', 
+        label: snap.event.blockLabel, 
+        children: [], 
+        snapshots: [] 
+      };
+      stack[stack.length - 1].children.push(blockNode);
+      stack.push(blockNode);
+    } else if (snap.event.type === 'BLOCK_EXIT') {
+      // Don't pop if we are at root or function
+      if (stack.length > 1 && stack[stack.length - 1].type !== 'function') {
+        stack.pop();
+      }
+    } else {
+      // It's a standard step (VARIABLE_UPDATE, COMPARISON, etc.)
+      // Skip pure variable updates unless it's a very short trace
+      if (timeline.length > 15 && (snap.event.type === 'VARIABLE_UPDATE' || snap.event.type === 'ANNOTATION')) {
+        continue;
+      }
+      currentBlock.children.push({
+        id: `step-${snap.step}`,
+        type: 'step',
+        snapshots: [snap],
+        children: []
+      });
+    }
+  }
+  
+  return root;
+}
 
 export default function FlowGraph() {
   const { timeline, currentStep, setCurrentStep } = useLabStore();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const [pan, setPan] = useState({ x: 40, y: 40 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
-
-  // Calculate layout
-  const nodes: LayoutNode[] = [];
-  const edges: LayoutEdge[] = [];
-
-  // Filter out pure variable updates to keep the graph sparse and readable, 
-  // UNLESS it's a very short timeline.
-  const significantSnaps = timeline.length < 15 
-    ? timeline 
-    : timeline.filter(s => 
-        s.event.type !== 'VARIABLE_UPDATE' && 
-        s.event.type !== 'ANNOTATION'
-      );
-
-  // If there are ANY function calls, we use a Tree layout (y = depth).
-  // Otherwise, we use a Linear layout wrapped into rows.
-  const hasRecursion = significantSnaps.some(s => s.recursiveDepth > 0);
-
-  if (hasRecursion) {
-    // Tree Layout: X = sequential, Y = depth
-    const yOffsets = new Map<number, number>(); // track last X per depth to prevent overlap?
-    // Actually, simpler: X is just index, Y is depth.
-    significantSnaps.forEach((snap, i) => {
-      nodes.push({
-        id: `node-${snap.step}`,
-        snap,
-        x: i * (NODE_WIDTH + X_SPACING),
-        y: snap.recursiveDepth * (NODE_HEIGHT + Y_SPACING),
-      });
-    });
-  } else {
-    // Linear wrap layout
-    const columns = 4;
-    significantSnaps.forEach((snap, i) => {
-      const row = Math.floor(i / columns);
-      const col = i % columns;
-      // Zig-zag? No, just left to right, then wrap around
-      nodes.push({
-        id: `node-${snap.step}`,
-        snap,
-        x: col * (NODE_WIDTH + X_SPACING),
-        y: row * (NODE_HEIGHT + Y_SPACING),
-      });
-    });
-  }
-
-  // Connect edges sequentially
-  for (let i = 1; i < nodes.length; i++) {
-    edges.push({
-      id: `edge-${i}`,
-      source: nodes[i - 1],
-      target: nodes[i],
-    });
-  }
-
-  // Auto-pan to current node
-  useEffect(() => {
-    const activeNode = nodes.find(n => n.snap.step === currentStep);
-    if (activeNode && containerRef.current) {
-      const w = containerRef.current.clientWidth;
-      const h = containerRef.current.clientHeight;
-      setPan({
-        x: (w / 2) - (activeNode.x * scale) - (NODE_WIDTH * scale / 2),
-        y: (h / 2) - (activeNode.y * scale) - (NODE_HEIGHT * scale / 2),
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep]); // Don't depend on scale/nodes or it fights user panning
 
   if (timeline.length === 0) {
     return (
@@ -107,104 +87,98 @@ export default function FlowGraph() {
     );
   }
 
+  const tree = buildExecutionTree(timeline);
+
+  // Auto-scroll to active node
+  useEffect(() => {
+    if (containerRef.current) {
+      const activeEl = containerRef.current.querySelector('.node-active');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      }
+    }
+  }, [currentStep]);
+
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full h-full bg-[#050508] overflow-hidden select-none"
-      onWheel={(e) => {
-        // Zoom
-        if (e.deltaY !== 0) {
-          const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-          setScale(s => Math.min(Math.max(s * zoomFactor, 0.2), 2));
+    <div ref={containerRef} className="w-full h-full bg-[#050508] overflow-auto p-8 relative">
+       {/* Background pattern */}
+      <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+      
+      <div className="relative">
+        {/* Skip the dummy 'Program' root if it only has one actual function child */}
+        {tree.children.length === 1 && tree.children[0].type === 'function' 
+          ? <ExecutionBlock node={tree.children[0]} currentStep={currentStep} onStepClick={setCurrentStep} />
+          : <ExecutionBlock node={tree} currentStep={currentStep} onStepClick={setCurrentStep} />
         }
-      }}
-      onMouseDown={(e) => {
-        setIsDragging(true);
-        setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-      }}
-      onMouseMove={(e) => {
-        if (isDragging) {
-          setPan({ x: e.clientX - startPan.x, y: e.clientY - startPan.y });
-        }
-      }}
-      onMouseUp={() => setIsDragging(false)}
-      onMouseLeave={() => setIsDragging(false)}
-    >
-      <div 
-        className="absolute origin-top-left will-change-transform"
-        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}
-      >
-        <svg 
-          className="absolute inset-0 pointer-events-none" 
-          style={{ width: 10000, height: 10000, overflow: 'visible' }} // Big enough bounds
-        >
-          {/* Grid pattern */}
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
-          </pattern>
-          <rect width="100%" height="100%" fill="url(#grid)" />
+      </div>
+    </div>
+  );
+}
 
-          {/* Edges */}
-          {edges.map(edge => {
-            const sx = edge.source.x + (NODE_WIDTH / 2);
-            const sy = edge.source.y + (NODE_HEIGHT / 2);
-            const tx = edge.target.x + (NODE_WIDTH / 2);
-            const ty = edge.target.y + (NODE_HEIGHT / 2);
+function ExecutionBlock({ 
+  node, 
+  currentStep, 
+  onStepClick 
+}: { 
+  node: ExecutionNode; 
+  currentStep: number; 
+  onStepClick: (step: number) => void; 
+}) {
+  if (node.type === 'step' && node.snapshots.length > 0) {
+    const snap = node.snapshots[0];
+    const isActive = snap.step === currentStep;
+    return (
+      <div className={`shrink-0 ${isActive ? 'node-active' : ''}`}>
+        <FlowNode 
+          snap={snap} 
+          isActive={isActive} 
+          onClick={() => onStepClick(snap.step)}
+        />
+      </div>
+    );
+  }
 
-            let d = '';
-            if (hasRecursion) {
-              // Curved paths for tree (down/right)
-              d = `M ${sx} ${sy + (NODE_HEIGHT/2)} C ${sx} ${ty - (NODE_HEIGHT/2) - 20}, ${tx} ${sy + (NODE_HEIGHT/2) + 20}, ${tx} ${ty - (NODE_HEIGHT/2)}`;
-            } else {
-              // Straight/L-shaped paths for grid
-              d = `M ${sx} ${sy} L ${tx} ${ty}`;
-            }
+  // Filter out empty container blocks
+  const validChildren = node.children.filter(c => c.type !== 'step' || c.snapshots.length > 0);
+  if (validChildren.length === 0) return null;
 
-            return (
-              <g key={edge.id}>
-                {/* Glow/shadow */}
-                <path d={d} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
-                {/* Main line */}
-                <path 
-                  d={d} 
-                  fill="none" 
-                  stroke="rgba(255,255,255,0.2)" 
-                  strokeWidth="2" 
-                  strokeDasharray="4 4"
-                  markerEnd="url(#arrow)"
-                />
-              </g>
-            );
-          })}
+  let borderColor = 'border-white/10';
+  let bgColor = 'bg-white/[0.02]';
+  let labelColor = 'text-white/40';
 
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="25" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255,255,255,0.3)" />
-            </marker>
-          </defs>
-        </svg>
+  if (node.type === 'function') {
+    borderColor = 'border-violet-500/30';
+    bgColor = 'bg-violet-500/[0.02]';
+    labelColor = 'text-violet-300';
+  } else if (node.type === 'loop') {
+    borderColor = 'border-cyan-500/30';
+    bgColor = 'bg-cyan-500/[0.02]';
+    labelColor = 'text-cyan-300';
+  } else if (node.type === 'iteration') {
+    borderColor = 'border-white/5';
+    bgColor = 'bg-transparent';
+    labelColor = 'text-white/20';
+  }
 
-        {/* Nodes (HTML overlay) */}
-        {nodes.map(node => (
-          <div 
-            key={node.id} 
-            className="absolute"
-            style={{ left: node.x, top: node.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
-          >
-            <FlowNode 
-              snap={node.snap} 
-              isActive={currentStep === node.snap.step} 
-              onClick={() => setCurrentStep(node.snap.step)}
-            />
-          </div>
-        ))}
+  const isVertical = node.type === 'function' || node.type === 'loop';
+
+  return (
+    <div className={`relative flex flex-col p-4 rounded-xl border ${borderColor} ${bgColor} min-w-min`}>
+      <div className={`absolute -top-3 left-4 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-widest bg-[#0a0a0f] border ${borderColor} ${labelColor}`}>
+        {node.type} {node.label ? `— ${node.label}` : ''}
       </div>
 
-      {/* Controls overlay */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2 bg-black/50 p-2 rounded-lg border border-white/10 backdrop-blur-md">
-        <button className="text-white/50 hover:text-white" onClick={() => setScale(s => Math.min(s * 1.2, 2))}>+</button>
-        <button className="text-white/50 hover:text-white" onClick={() => setScale(s => Math.max(s * 0.8, 0.2))}>-</button>
-        <button className="text-[10px] font-mono text-white/50 hover:text-white mt-1" onClick={() => { setScale(1); setPan({x:40, y:40}); }}>reset</button>
+      <div className={`mt-2 flex ${isVertical ? 'flex-col gap-6' : 'flex-row flex-wrap gap-4 items-center'}`}>
+        {validChildren.map((child, i) => (
+          <div key={child.id} className="flex items-center gap-4">
+            <ExecutionBlock node={child} currentStep={currentStep} onStepClick={onStepClick} />
+            
+            {/* Draw arrow to next sibling if horizontal layout (iterations) */}
+            {!isVertical && i < validChildren.length - 1 && (
+              <ArrowRight size={14} className="text-white/10 shrink-0" />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
