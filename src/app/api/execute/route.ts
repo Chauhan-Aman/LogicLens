@@ -53,15 +53,30 @@ export async function POST(req: Request) {
     // Generate C++ wrapper
     const cppInit = generateCppInit(parsedInput);
     
+    let finalCode = code;
+    if (!code.includes('int main')) {
+      finalCode = `int main() {\n${code}\nreturn 0;\n}`;
+    }
+
     const fullCode = `
 #include "LogicLens.h"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <map>
+#include <unordered_map>
+#include <set>
+#include <unordered_set>
+
+using namespace std;
 
 // --- INJECTED GLOBAL INPUTS ---
 ${cppInit}
 // ------------------------------
 
 // --- USER CODE ---
-${code}
+${finalCode}
 // -----------------
 `;
 

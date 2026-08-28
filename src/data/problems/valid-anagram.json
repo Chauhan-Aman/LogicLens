@@ -19,7 +19,7 @@
       "name": "Brute Force Sorting",
       "complexity": { "time": "O(n log n)", "space": "O(n)" },
       "language": "cpp",
-      "code": "// Brute Force Sorting C++ — O(n log n)\n#include <iostream>\n#include <string>\n\nusing namespace std;\n\nint main() {\n  if (s.length() != t.length()) {\n    __ll_note(\"Lengths differ, not an anagram\");\n    return 0;\n  }\n\n  for (int i = 0; i < s.length(); i++) {\n    for (int j = i + 1; j < s.length(); j++) {\n      if (s[i] > s[j]) { char temp = s[i]; s[i] = s[j]; s[j] = temp; }\n    }\n  }\n  for (int i = 0; i < t.length(); i++) {\n    for (int j = i + 1; j < t.length(); j++) {\n      if (t[i] > t[j]) { char temp = t[i]; t[i] = t[j]; t[j] = temp; }\n    }\n  }\n\n  for (int i = 0; i < s.length(); i++) {\n    if (s[i] != t[i]) {\n      __ll_note(\"Mismatch found\");\n      return 0;\n    }\n  }\n\n  __ll_note(\"Valid anagram!\");\n  return 0;\n}"
+      "code": "// Brute Force Sorting C++ — O(n log n)\nif (s.length() != t.length()) {\n  __ll_note(\"Lengths differ, not an anagram\");\n  return 0;\n}\n\nfor (int i = 0; i < s.length(); i++) {\n  for (int j = i + 1; j < s.length(); j++) {\n    if (s[i] > s[j]) { char temp = s[i]; s[i] = s[j]; s[j] = temp; }\n  }\n}\nfor (int i = 0; i < t.length(); i++) {\n  for (int j = i + 1; j < t.length(); j++) {\n    if (t[i] > t[j]) { char temp = t[i]; t[i] = t[j]; t[j] = temp; }\n  }\n}\n\nfor (int i = 0; i < s.length(); i++) {\n  if (s[i] != t[i]) {\n    __ll_note(\"Mismatch found\");\n    return 0;\n  }\n}\n\n__ll_note(\"Valid anagram!\");\nreturn 0;"
     }
   ],
   "structures": ["hashmap"],
