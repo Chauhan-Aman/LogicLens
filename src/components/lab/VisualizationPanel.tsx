@@ -61,17 +61,20 @@ export default function VisualizationPanel() {
   const hasMapsOrSets = Object.keys(snap.maps).length > 0 || Object.keys(snap.sets).length > 0;
   const hasStack = snap.callStack.length > 0;
 
-  // Track loop iterations
-  const blockStack: { type: string, iters: number }[] = [];
+  // Track loop iterations and past variables
+  const blockStack: { type: string, iters: number, id: string }[] = [];
+  const completedIterations: Record<string, { iter: number, variables: Record<string, any> }[]> = {};
+
   for (let i = 0; i <= currentStep; i++) {
     const ev = timeline[i].event;
     if (ev.type === 'BLOCK_ENTER') {
        const bType = (ev as any).blockType || (ev as any).label;
        if (bType === 'loop' || bType === 'for' || bType === 'while') {
-          blockStack.push({ type: 'loop', iters: 0 });
+          const loopId = `loop-${i}`;
+          blockStack.push({ type: 'loop', iters: 0, id: loopId });
+          completedIterations[loopId] = [];
        } else if (bType === 'iteration') {
           if (blockStack.length > 0) {
-             // Increment iteration count on the nearest loop
              for (let j = blockStack.length - 1; j >= 0; j--) {
                if (blockStack[j].type === 'loop') {
                  blockStack[j].iters++;
@@ -79,17 +82,27 @@ export default function VisualizationPanel() {
                }
              }
           }
-          blockStack.push({ type: 'iteration', iters: 0 });
+          blockStack.push({ type: 'iteration', iters: 0, id: `iter-${i}` });
        } else {
-          blockStack.push({ type: 'other', iters: 0 });
+          blockStack.push({ type: 'other', iters: 0, id: `other-${i}` });
        }
     } else if (ev.type === 'BLOCK_EXIT') {
-       blockStack.pop();
+       const exited = blockStack.pop();
+       if (exited && exited.type === 'iteration') {
+           const nearestLoop = [...blockStack].reverse().find(b => b.type === 'loop');
+           if (nearestLoop) {
+               completedIterations[nearestLoop.id].push({
+                   iter: nearestLoop.iters,
+                   variables: { ...timeline[i].variables }
+               });
+           }
+       }
     }
   }
 
   const deepestLoop = [...blockStack].reverse().find(b => b.type === 'loop');
   const iterDisplay = deepestLoop ? deepestLoop.iters : 0;
+  const pastIters = deepestLoop ? (completedIterations[deepestLoop.id] || []) : [];
 
   const displayVariables = { ...snap.variables };
   if (iterDisplay > 0) {
@@ -183,11 +196,26 @@ export default function VisualizationPanel() {
         {/* ─── Variables ─── */}
         {hasVars && (
           <Section title="Variables" color="cyan">
-            <VariableChips
-              variables={displayVariables}
-              changedVariable={snap.changedVariable}
-              pointerNames={pointerNames}
-            />
+            <div className="flex flex-col gap-4">
+              {pastIters.map((pi, idx) => (
+                <div key={idx} className="flex flex-col gap-2 pb-3 border-b border-white/5 opacity-50 hover:opacity-100 transition-opacity">
+                   <div className="text-[10px] text-cyan-500/50 uppercase tracking-widest font-mono">Iteration {pi.iter}</div>
+                   <VariableChips
+                     variables={pi.variables}
+                     changedVariable={undefined}
+                     pointerNames={pointerNames}
+                   />
+                </div>
+              ))}
+              <div className="flex flex-col gap-2">
+                 {pastIters.length > 0 && <div className="text-[10px] text-cyan-400 uppercase tracking-widest font-mono">Current</div>}
+                 <VariableChips
+                   variables={displayVariables}
+                   changedVariable={snap.changedVariable}
+                   pointerNames={pointerNames}
+                 />
+              </div>
+            </div>
           </Section>
         )}
 
