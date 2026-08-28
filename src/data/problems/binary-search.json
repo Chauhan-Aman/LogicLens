@@ -14,6 +14,12 @@
       "complexity": { "time": "O(log n)", "space": "O(1)" },
       "language": "javascript",
       "code": "// Binary Search — O(log n)\nconst nums = __ll.array('nums', __input.nums);\nconst target = __input.target;\nlet left = 0;\nlet right = nums.length - 1;\n\nwhile (left <= right) {\n  const mid = Math.floor((left + right) / 2);\n  __ll.setVar('left', left);\n  __ll.setVar('right', right);\n  __ll.setVar('mid', mid);\n  const midVal = nums[mid];\n  __ll.setVar('midVal', midVal);\n  const cmp = __ll.compare(midVal, target, midVal === target);\n  if (cmp) {\n    __ll.note(`Found target ${target} at index ${mid}`);\n    return mid;\n  } else if (midVal < target) {\n    left = mid + 1;\n    __ll.note(`${midVal} < ${target}, search right half`);\n  } else {\n    right = mid - 1;\n    __ll.note(`${midVal} > ${target}, search left half`);\n  }\n}\nreturn -1;"
+    },
+    {
+      "name": "Binary Search",
+      "complexity": { "time": "O(log n)", "space": "O(1)" },
+      "language": "cpp",
+      "code": "// Binary Search C++ — O(log n)\nint left = 0;\nint right = nums.size() - 1;\n\nwhile (left <= right) {\n  int mid = left + (right - left) / 2;\n  int midVal = nums[mid];\n  \n  if (midVal == target) {\n    __ll_note(\"Found target at index \" + __ll_to_json(mid));\n    return mid;\n  } else if (midVal < target) {\n    __ll_note(\"midVal < target, search right half\");\n    left = mid + 1;\n  } else {\n    __ll_note(\"midVal > target, search left half\");\n    right = mid - 1;\n  }\n}\nreturn -1;"
     }
   ],
   "structures": ["array"],
