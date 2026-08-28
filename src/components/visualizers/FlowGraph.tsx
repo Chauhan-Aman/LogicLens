@@ -171,14 +171,17 @@ function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: Exe
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="flex flex-col items-center overflow-hidden w-full"
+            className="flex flex-col items-center w-full"
           >
             <div className="w-[1px] h-4 bg-white/10" />
-            <div className="flex flex-col items-center w-full border-l border-dashed border-white/10 ml-[340px] -translate-x-[170px] pl-6 py-2">
-              {node.children
-                .map(child => (
-                  <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
-              ))}
+            <div className="w-full flex flex-col items-center relative pb-2">
+              <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-white/10 -translate-x-1/2" />
+              <div className="relative z-10 w-full flex flex-col items-center gap-1">
+                {node.children
+                  .map(child => (
+                    <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
+                ))}
+              </div>
             </div>
           </motion.div>
         )}
@@ -257,16 +260,32 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
 
   return (
     <div className="flex flex-col items-center w-full my-4">
-      {/* The Circular Loop Node */}
+      {/* The Flowchart Loop Node */}
       <div className="w-[1px] h-6 bg-white/10" />
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`w-16 h-16 rounded-full border-2 ${borderColor} flex flex-col items-center justify-center cursor-pointer transition-all duration-300 z-10 shrink-0`}
+        className={`w-[340px] rounded-lg border ${borderColor} p-4 flex items-center justify-between cursor-pointer transition-all duration-300 z-10 shrink-0 shadow-lg`}
       >
-        <RefreshCcw size={20} className={isActive ? 'text-blue-400' : 'text-white/40'} />
-        <span className="text-[9px] font-bold tracking-widest text-white/40 mt-1 uppercase">
-          {node.label ? `${node.label} loop` : 'Loop'}
-        </span>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+            <RefreshCcw size={16} />
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-sm font-mono font-bold text-white/90">
+              {node.label ? `${node.label.toUpperCase()} LOOP` : 'LOOP'}
+            </span>
+            <span className="text-[10px] text-white/40 uppercase tracking-wider">
+              Iterative Block
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 border-l border-white/10 pl-4">
+          <div className="flex flex-col text-right hidden sm:flex">
+             <span className="text-[10px] text-white/40 uppercase tracking-wider">Logic</span>
+             <span className="text-xs font-mono text-white/60">Condition check</span>
+          </div>
+          {isExpanded ? <ChevronDown size={16} className="text-white/40" /> : <ChevronRight size={16} className="text-white/40" />}
+        </div>
       </div>
       
       <AnimatePresence>
@@ -275,11 +294,17 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="flex flex-col items-center overflow-hidden w-full"
+            className="flex flex-col items-center w-full"
           >
-            <div className="w-[1px] h-4 bg-blue-500/30" />
-            <div className="flex flex-col items-center w-full border-l border-blue-500/30 ml-[340px] -translate-x-[170px] pl-6 py-2 bg-blue-500/[0.02] rounded-r-2xl">
-              {childrenToRender}
+            {/* Center Orthogonal Connector Spine */}
+            <div className="w-[1px] h-6 bg-blue-500/30" />
+            <div className="w-full flex flex-col items-center relative pb-4">
+               {/* The main vertical timeline spine */}
+               <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-blue-500/20 -translate-x-1/2" />
+               
+               <div className="relative z-10 w-full flex flex-col items-center gap-1">
+                 {childrenToRender}
+               </div>
             </div>
           </motion.div>
         )}

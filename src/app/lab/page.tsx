@@ -198,6 +198,7 @@ export default function LabPage() {
 
         {/* Three-panel layout */}
         <div className="flex-1 min-h-0 overflow-hidden w-full">
+          {/* @ts-ignore */}
           <PanelGroup direction="horizontal" className="w-full h-full">
             {/* Left: Problem description */}
             <Panel defaultSize={22} minSize={15} className="flex flex-col overflow-hidden">
