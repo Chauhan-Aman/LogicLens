@@ -119,9 +119,21 @@ export default function VisualizationPanel() {
 
   // Build per-array pointer map from variables
   const pointers: Record<string, number> = {};
+  const NON_POINTER_TERMS = ['val', 'value', 'sum', 'count', 'ans', 'res', 'target', 'len', 'size', 'total', 'max', 'min', 'diff', 'temp', 'tmp'];
+  
   for (const [k, v] of Object.entries(snap.variables)) {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 10000) {
-      pointers[k] = v as number;
+      const lowerK = k.toLowerCase();
+      let isValue = NON_POINTER_TERMS.some(term => lowerK.includes(term));
+      
+      // Override if explicitly named as index/pointer
+      if (lowerK.includes('idx') || lowerK.includes('index') || lowerK.includes('ptr')) {
+        isValue = false;
+      }
+      
+      if (!isValue) {
+        pointers[k] = v as number;
+      }
     }
   }
 
