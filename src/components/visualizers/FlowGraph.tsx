@@ -53,12 +53,17 @@ function buildExecutionTree(timeline: StateSnapshot[]): ExecutionNode {
         stack.pop();
       }
     } else {
-      currentBlock.children.push({
-        id: `step-${snap.step}`,
-        type: 'step',
-        snapshots: [snap],
-        children: []
-      });
+      const lastChild = currentBlock.children[currentBlock.children.length - 1];
+      if (lastChild && lastChild.type === 'step' && snap.event.type === 'VARIABLE_UPDATE' && lastChild.snapshots[lastChild.snapshots.length - 1].event.type === 'VARIABLE_UPDATE') {
+        lastChild.snapshots.push(snap);
+      } else {
+        currentBlock.children.push({
+          id: `step-${snap.step}`,
+          type: 'step',
+          snapshots: [snap],
+          children: []
+        });
+      }
     }
   }
   return root;
