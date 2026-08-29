@@ -17,6 +17,7 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
   const [description, setDescription] = useState('');
   const [defaultCode, setDefaultCode] = useState('');
   const [defaultInput, setDefaultInput] = useState('{}');
+  const [testCasesJson, setTestCasesJson] = useState('[]');
   
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -30,10 +31,13 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
 
     setIsGenerating(true);
     try {
-      const template = await generateProblemTemplate(title);
+      const template = await generateProblemTemplate(title, description);
       setDescription(template.description || '');
       setDefaultInput(template.defaultInput || '{}');
       setDefaultCode(template.code || '');
+      if (template.testCases) {
+        setTestCasesJson(JSON.stringify(template.testCases, null, 2));
+      }
     } catch (err: any) {
       alert(err.message || 'Failed to auto-generate problem. Ensure Ollama is running.');
     } finally {
@@ -47,6 +51,17 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
       return;
     }
 
+    let parsedTestCases;
+    try {
+      parsedTestCases = JSON.parse(testCasesJson);
+      if (!Array.isArray(parsedTestCases)) {
+        throw new Error('Test cases must be an array');
+      }
+    } catch (err) {
+      alert('Test Cases must be a valid JSON array.');
+      return;
+    }
+
     const newProblem: Problem = {
       id: uuidv4(),
       title,
@@ -54,6 +69,7 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
       tags: ['Custom'],
       description,
       examples: [], // Could be expanded later
+      testCases: parsedTestCases,
       solutions: [
         {
           name: 'My Solution',
@@ -145,14 +161,24 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
                 />
               </div>
               <div className="flex-1 space-y-1">
-                <label className="text-xs font-semibold text-white/60 uppercase">Starter Code</label>
+                <label className="text-xs font-semibold text-white/60 uppercase">Test Cases (JSON)</label>
                 <textarea
-                  value={defaultCode}
-                  onChange={(e) => setDefaultCode(e.target.value)}
-                  placeholder="function solution() {}"
+                  value={testCasesJson}
+                  onChange={(e) => setTestCasesJson(e.target.value)}
+                  placeholder="[{}]"
                   className="w-full h-24 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white outline-none focus:border-violet-500/50 font-mono resize-none"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-white/60 uppercase">Starter Code</label>
+              <textarea
+                value={defaultCode}
+                onChange={(e) => setDefaultCode(e.target.value)}
+                placeholder="function solution() {}"
+                className="w-full h-24 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white outline-none focus:border-violet-500/50 font-mono resize-none"
+              />
             </div>
           </div>
 

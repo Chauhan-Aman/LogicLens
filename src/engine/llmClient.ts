@@ -80,18 +80,28 @@ Ensure the graphic array contains clean, readable lines of text simulating an ex
   }
 }
 
-export async function generateProblemTemplate(problemTitle: string): Promise<any> {
-  const prompt = `You are an expert algorithm problem creator. Generate a comprehensive JSON problem definition for the data structures and algorithms problem: "${problemTitle}".
+export async function generateProblemTemplate(problemTitle: string, rawDescription?: string): Promise<any> {
+  const prompt = `You are an expert algorithm problem parser and creator. 
+Title: "${problemTitle}"
+Raw Input/Description: """${rawDescription || ''}"""
+
+Your task:
+1. If Raw Input is provided, rewrite and beautify it into a clean Markdown description. If it's empty, invent a classic algorithm description for the title.
+2. Extract all test cases from the Raw Input. Carefully VALIDATE the expected output of each test case mathematically/logically. If the raw text implies an output that is mathematically incorrect based on the rules, correct the output.
+3. Format the test cases strictly into a JSON array where 'input' is a flat key-value object of the variables, and 'expected' is the primitive return value or array.
 
 Output ONLY valid JSON matching this schema exactly, with NO markdown formatting, NO backticks, and NO extra text:
 {
-  "description": "A detailed 3-4 sentence explanation of the problem, including the input and expected output.",
+  "description": "A detailed 3-4 sentence explanation of the problem in clean markdown.",
   "examples": [
     { "input": "string representation of input", "output": "string representation of output" }
   ],
   "defaultInput": "A JSON string representing the default variables for the execution environment, e.g. '{ \\"nums\\": [1, 2, 3] }'",
   "code": "A basic function signature in Javascript/TypeScript solving the problem, with a return statement.",
-  "structures": ["array"] 
+  "structures": ["array"],
+  "testCases": [
+    { "input": { "n": 4, "a": [7, 15, 6, 3], "h": 8 }, "expected": 5 }
+  ]
 }`;
 
   try {
