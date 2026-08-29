@@ -246,8 +246,8 @@ export default function CodeEditor() {
           value={inputJson}
           onChange={(e) => setInputJson(e.target.value)}
           placeholder='{ "nums": [2, 7, 11, 15], "target": 9 }'
-          rows={4}
-          className="w-full px-4 pb-3 bg-transparent font-mono text-xs text-white/60 placeholder-white/20 resize-y min-h-[4rem] max-h-[20rem] focus:outline-none"
+          rows={10}
+          className="w-full px-4 pb-3 bg-transparent font-mono text-xs text-white/60 placeholder-white/20 resize-y min-h-[10rem] focus:outline-none"
         />
       </div>
 

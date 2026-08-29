@@ -3,14 +3,12 @@
 
 // --- INJECTED GLOBAL INPUTS ---
 
-std::vector<int> nums = {-1, 0, 3, 5, 9, 12};
-int target = 9;
+std::vector<int> prices = {3, 2, 6, 5, 0, 3};
 
 
 struct __LL_Init {
     __LL_Init() {
-        __ll_set_var("nums", nums);
-        __ll_set_var("target", target);
+        __ll_set_var("prices", prices);
 
     }
 } __ll_init_instance;
@@ -18,29 +16,27 @@ struct __LL_Init {
 // ------------------------------
 
 // --- USER CODE ---
-// Binary Search C++ â€” O(log n)
+// Sliding Window C++ â€” O(n)
 #include <iostream>
 #include <vector>
 
 using namespace std;
 
 int main() {
-  int left = 0;
-  int right = nums.size() - 1;
+  int minPrice = 2147483647;
+  int maxProfit = 0;
 
-  while (left <= right) {
-    int mid = left + (right - left) / 2;
-    int midVal = nums[mid];
-    
-    if (midVal == target) {
-      cout << "Found target at index " << mid << endl;
-      return 0;
-    } else if (midVal < target) {
-      cout << "midVal < target, search right half" << endl;
-      left = mid + 1;
+  for (int i = 0; i < prices.size(); i++) {
+    int price = prices[i];
+    if (price < minPrice) {
+      minPrice = price;
+      cout << "New min price: " << minPrice << endl;
     } else {
-      cout << "midVal > target, search left half" << endl;
-      right = mid - 1;
+      int profit = price - minPrice;
+      if (profit > maxProfit) {
+        maxProfit = profit;
+        cout << "New max profit: " << maxProfit << endl;
+      }
     }
   }
   return 0;
