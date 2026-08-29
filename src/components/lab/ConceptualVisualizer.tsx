@@ -15,6 +15,7 @@ export default function ConceptualVisualizer() {
   const [chatInput, setChatInput] = useState('');
   const [isChatting, setIsChatting] = useState(false);
   const [isGraphicExpanded, setIsGraphicExpanded] = useState(false);
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
 
   if (!activeProblem) {
     return null;
@@ -54,6 +55,56 @@ export default function ConceptualVisualizer() {
       setIsChatting(false);
     }
   };
+
+  const renderChat = (isExpanded: boolean) => (
+    <div className={`flex flex-col ${isExpanded ? 'h-full' : 'h-64 bg-white/5 rounded-lg border border-white/10 relative group'}`}>
+      {!isExpanded && (
+        <button 
+          onClick={() => setIsChatExpanded(true)}
+          className="absolute top-2 right-2 p-1.5 bg-black/40 text-white/50 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60 hover:text-white/80 z-10"
+        >
+          <Maximize2 size={14} />
+        </button>
+      )}
+      <div className="flex-grow p-4 overflow-y-auto space-y-4">
+        {chatHistory.length === 0 ? (
+          <p className="text-xs text-white/40 text-center mt-8">Ask me anything about this problem or your code!</p>
+        ) : (
+          chatHistory.map((msg, i) => (
+            <div key={i} className={`text-xs ${msg.role === 'user' ? 'text-right text-white/80' : 'text-left text-violet-300'} whitespace-pre-wrap`}>
+              <span className={`inline-block px-3 py-2 rounded-lg ${msg.role === 'user' ? 'bg-white/10' : 'bg-violet-900/30'}`}>
+                {msg.content}
+              </span>
+            </div>
+          ))
+        )}
+        {isChatting && (
+          <div className="text-xs text-left text-violet-300">
+            <span className="inline-block px-3 py-2 rounded-lg bg-violet-900/30 flex items-center gap-2">
+              <Loader2 size={12} className="animate-spin" /> Thinking...
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="border-t border-white/10 p-2 flex gap-2 shrink-0">
+        <input
+          type="text"
+          value={chatInput}
+          onChange={e => setChatInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleChat()}
+          placeholder="Ask a question..."
+          className="flex-grow bg-black/40 border border-white/10 rounded px-3 text-xs text-white outline-none focus:border-violet-500/50"
+        />
+        <button
+          onClick={handleChat}
+          disabled={isChatting || !chatInput.trim()}
+          className="p-2 bg-violet-600 text-white rounded hover:bg-violet-500 disabled:opacity-50 transition-colors"
+        >
+          <Send size={14} />
+        </button>
+      </div>
+    </div>
+  );
 
   // Use JSON schema first, fallback to generated concept if available
   const concept = activeProblem.conceptualView || generatedConcept;
@@ -138,46 +189,29 @@ export default function ConceptualVisualizer() {
           <h3 className="text-sm font-semibold text-white/80 mb-4 flex items-center gap-2">
             <Sparkles size={14} className="text-violet-400" /> AI Tutor
           </h3>
-          <div className="bg-white/5 rounded-lg border border-white/10 h-64 flex flex-col">
-            <div className="flex-grow p-4 overflow-y-auto space-y-4">
-              {chatHistory.length === 0 ? (
-                <p className="text-xs text-white/40 text-center mt-8">Ask me anything about this problem or your code!</p>
-              ) : (
-                chatHistory.map((msg, i) => (
-                  <div key={i} className={`text-xs ${msg.role === 'user' ? 'text-right text-white/80' : 'text-left text-violet-300'} whitespace-pre-wrap`}>
-                    <span className={`inline-block px-3 py-2 rounded-lg ${msg.role === 'user' ? 'bg-white/10' : 'bg-violet-900/30'}`}>
-                      {msg.content}
-                    </span>
-                  </div>
-                ))
-              )}
-              {isChatting && (
-                <div className="text-xs text-left text-violet-300">
-                  <span className="inline-block px-3 py-2 rounded-lg bg-violet-900/30 flex items-center gap-2">
-                    <Loader2 size={12} className="animate-spin" /> Thinking...
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="border-t border-white/10 p-2 flex gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleChat()}
-                placeholder="Ask a question..."
-                className="flex-grow bg-black/40 border border-white/10 rounded px-3 text-xs text-white outline-none focus:border-violet-500/50"
-              />
-              <button
-                onClick={handleChat}
-                disabled={isChatting || !chatInput.trim()}
-                className="p-2 bg-violet-600 text-white rounded hover:bg-violet-500 disabled:opacity-50 transition-colors"
-              >
-                <Send size={14} />
-              </button>
+          {renderChat(false)}
+        </div>
+
+        {isChatExpanded && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8">
+            <div className="bg-[#12121a] border border-white/10 rounded-xl w-full max-w-5xl h-full max-h-[80vh] flex flex-col shadow-2xl">
+              <div className="flex justify-between items-center p-4 border-b border-white/10">
+                <h3 className="font-bold text-white/80 flex items-center gap-2">
+                  <Sparkles size={16} className="text-violet-400" /> AI Tutor — {activeProblem.title}
+                </h3>
+                <button 
+                  onClick={() => setIsChatExpanded(false)}
+                  className="p-1.5 text-white/50 hover:bg-white/10 rounded transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-grow overflow-hidden p-6">
+                 {renderChat(true)}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </motion.div>
     </div>
   );
