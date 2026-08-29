@@ -49,6 +49,7 @@ export default function CodeEditor() {
 
   const [isRunning, setIsRunning] = useState(false);
   const [isRunningAll, setIsRunningAll] = useState(false);
+  const [activeTab, setActiveTab] = useState<number | null>(null);
 
   const run = useCallback(async () => {
     if (!userCode.trim()) return;
@@ -217,13 +218,26 @@ export default function CodeEditor() {
 
       {/* Input panel */}
       <div className="border-t border-white/8 bg-black/20 flex flex-col shrink-0">
-        <div className="px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-white/30 uppercase tracking-widest">Input</span>
-            <span className="text-xs text-white/15">JSON</span>
+        <div className="px-4 py-2 flex items-center justify-between overflow-x-auto">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-mono text-white/30 uppercase tracking-widest mr-2">Input</span>
+            {activeProblem?.testCases?.map((tc, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setActiveTab(idx);
+                  setInputJson(JSON.stringify(tc.input, null, 2));
+                }}
+                className={`text-[10px] px-3 py-1 rounded transition-colors ${activeTab === idx ? 'bg-white/20 text-white' : 'bg-white/5 text-white/50 hover:bg-white/10'}`}
+              >
+                Test {idx + 1}
+              </button>
+            ))}
+            <span className="text-xs text-white/15 ml-2">JSON</span>
           </div>
           <button
             onClick={() => {
+              setActiveTab(null);
               try {
                 const currentInput = JSON.parse(inputJson);
                 // Simple randomizer for arrays
@@ -237,14 +251,17 @@ export default function CodeEditor() {
                 console.error("Invalid JSON for generation");
               }
             }}
-            className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-white/50 hover:text-white transition-colors"
+            className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-white/50 hover:text-white transition-colors shrink-0 ml-4"
           >
             Generate Random Test Case
           </button>
         </div>
         <textarea
           value={inputJson}
-          onChange={(e) => setInputJson(e.target.value)}
+          onChange={(e) => {
+            setInputJson(e.target.value);
+            setActiveTab(null);
+          }}
           placeholder='{ "nums": [2, 7, 11, 15], "target": 9 }'
           rows={10}
           className="w-full px-4 pb-3 bg-transparent font-mono text-xs text-white/60 placeholder-white/20 resize-y min-h-[10rem] focus:outline-none"
