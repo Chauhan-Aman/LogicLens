@@ -22,6 +22,11 @@ export interface Problem {
   }[];
   structures: string[];
   defaultInput: string;
+  conceptualView?: {
+    problemConcept: string;
+    optimalConcept: string;
+    graphic?: string[];
+  };
   testCases?: {
     input: Record<string, unknown>;
     expected: unknown;

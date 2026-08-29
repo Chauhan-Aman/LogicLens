@@ -29,6 +29,14 @@
     }
   ],
   "structures": ["array", "hashmap"],
+  "conceptualView": {
+    "problemConcept": "Find two numbers that add up to the target.",
+    "optimalConcept": "Instead of checking every pair (O(n²)), we can iterate once. For each number, we check if we've seen its complement (target - number) using a HashMap.",
+    "graphic": [
+      "Iteration 1: num = 2, complement = 7. Seen 7? No. Store {2: 0}",
+      "Iteration 2: num = 7, complement = 2. Seen 2? Yes! Return [0, 1]"
+    ]
+  },
   "defaultInput": "{ \"nums\": [2, 7, 11, 15], \"target\": 9 }",
   "testCases": [
     { "input": { "nums": [2, 7, 11, 15], "target": 9 },  "expected": [0, 1], "exactOrder": false },

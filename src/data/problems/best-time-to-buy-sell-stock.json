@@ -23,6 +23,15 @@
     }
   ],
   "structures": ["array"],
+  "conceptualView": {
+    "problemConcept": "Find the maximum difference between two numbers, where the smaller number comes before the larger number.",
+    "optimalConcept": "Iterate through the array while keeping track of the minimum price seen so far. If we find a new minimum, update it. Otherwise, calculate the profit if we sold today, and update the max profit if it's higher.",
+    "graphic": [
+      "Track: minPrice, maxProfit",
+      "[7, 1, 5, 3, 6, 4]",
+      "     ^min     ^max profit (6-1=5)"
+    ]
+  },
   "defaultInput": "{ \"prices\": [7, 1, 5, 3, 6, 4] }",
   "testCases": [
     { "input": { "prices": [7, 1, 5, 3, 6, 4] }, "expected": 5 },

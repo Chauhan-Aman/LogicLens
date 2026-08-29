@@ -2,83 +2,145 @@
 
 import { useLabStore } from '@/store/labStore';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { askTutor, generateConceptualView } from '@/engine/llmClient';
+import { Sparkles, Send, Loader2 } from 'lucide-react';
 
 export default function ConceptualVisualizer() {
-  const { activeProblem } = useLabStore();
+  const { activeProblem, userCode } = useLabStore();
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedConcept, setGeneratedConcept] = useState<{ problemConcept: string, optimalConcept: string, graphic?: string[] } | null>(null);
+  
+  const [chatInput, setChatInput] = useState('');
+  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'tutor', content: string }[]>([]);
+  const [isChatting, setIsChatting] = useState(false);
 
   if (!activeProblem) {
     return null;
   }
 
-  // Very simple static conceptual representations for the 5 built-in problems
-  const renderConcept = () => {
-    switch (activeProblem.id) {
-      case 'two-sum':
-        return (
-          <div className="space-y-6 text-left">
-            <h3 className="text-sm font-semibold text-white/80 border-b border-white/10 pb-2">Problem Concept</h3>
-            <p className="text-sm text-white/60">Find two numbers that add up to the target.</p>
-            <div className="flex justify-center py-4">
-              <div className="flex gap-2">
-                {[2, 7, 11, 15].map(n => (
-                  <div key={n} className="w-10 h-10 bg-white/5 ring-1 ring-white/10 rounded flex items-center justify-center font-mono text-sm">{n}</div>
-                ))}
-              </div>
-            </div>
-            <p className="text-xs text-white/40 text-center">Target = 9</p>
-            
-            <h3 className="text-sm font-semibold text-white/80 border-b border-white/10 pb-2 mt-8">Optimal Solution Concept</h3>
-            <p className="text-sm text-white/60">Instead of checking every pair (O(n²)), we can iterate once.</p>
-            <p className="text-sm text-white/60">For each number, we check if we've seen its <strong>complement</strong> (target - number) using a HashMap.</p>
-            <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50">
-              <div>Iteration 1: num = 2, complement = 7. Seen 7? No. Store {`{2: 0}`}</div>
-              <div>Iteration 2: num = 7, complement = 2. Seen 2? Yes! Return [0, 1]</div>
-            </div>
-          </div>
-        );
-        
-      case 'best-time-to-buy-sell-stock':
-        return (
-          <div className="space-y-6 text-left">
-            <h3 className="text-sm font-semibold text-white/80 border-b border-white/10 pb-2">Problem Concept</h3>
-            <p className="text-sm text-white/60">Find the maximum difference between two numbers, where the smaller number comes before the larger number.</p>
-            
-            <h3 className="text-sm font-semibold text-white/80 border-b border-white/10 pb-2 mt-8">Optimal Solution Concept</h3>
-            <p className="text-sm text-white/60">Iterate through the array while keeping track of the minimum price seen so far.</p>
-            <p className="text-sm text-white/60">If we find a new minimum, update it. Otherwise, calculate the profit if we sold today, and update the max profit if it's higher.</p>
-            <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50">
-              <div>Track: minPrice, maxProfit</div>
-              <div>[7, 1, 5, 3, 6, 4]</div>
-              <div>     ^min     ^max profit (6-1=5)</div>
-            </div>
-          </div>
-        );
-        
-      default:
-        return (
-          <div className="space-y-4">
-             <p className="text-sm text-white/50">
-              Conceptual visualization and problem understanding tools are designed to explain the algorithmic approach *before* you write the code.
-            </p>
-            <p className="text-sm text-white/40">
-              Select one of the classic problems like Two Sum to see a detailed conceptual breakdown.
-            </p>
-          </div>
-        );
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await generateConceptualView(activeProblem.title, activeProblem.description);
+      setGeneratedConcept(res);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate conceptual view using Ollama. Ensure Ollama is running.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
+  const handleChat = async () => {
+    if (!chatInput.trim()) return;
+    const question = chatInput.trim();
+    setChatInput('');
+    setChatHistory(prev => [...prev, { role: 'user', content: question }]);
+    
+    setIsChatting(true);
+    try {
+      const res = await askTutor(activeProblem.title, activeProblem.description, userCode, question);
+      setChatHistory(prev => [...prev, { role: 'tutor', content: res }]);
+    } catch (err) {
+      console.error(err);
+      setChatHistory(prev => [...prev, { role: 'tutor', content: 'Sorry, I failed to connect to Ollama.' }]);
+    } finally {
+      setIsChatting(false);
+    }
+  };
+
+  // Use JSON schema first, fallback to generated concept if available
+  const concept = activeProblem.conceptualView || generatedConcept;
+
   return (
-    <div className="h-full overflow-y-auto p-6 bg-[#0a0a12]">
+    <div className="h-full overflow-y-auto p-6 bg-[#0a0a12] flex flex-col">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md mx-auto mt-4"
+        className="max-w-md mx-auto mt-4 w-full flex-grow"
       >
         <h2 className="text-lg font-bold text-white/90 mb-6 flex items-center gap-2">
           <span className="text-violet-400">💡</span> {activeProblem.title}
         </h2>
-        {renderConcept()}
+        
+        {concept ? (
+          <div className="space-y-6 text-left">
+            <h3 className="text-sm font-semibold text-white/80 border-b border-white/10 pb-2">Problem Concept</h3>
+            <p className="text-sm text-white/60">{concept.problemConcept}</p>
+            
+            <h3 className="text-sm font-semibold text-white/80 border-b border-white/10 pb-2 mt-8">Optimal Solution Concept</h3>
+            <p className="text-sm text-white/60">{concept.optimalConcept}</p>
+            
+            {concept.graphic && concept.graphic.length > 0 && (
+               <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50 whitespace-pre">
+                 {concept.graphic.map((line, i) => (
+                   <div key={i}>{line}</div>
+                 ))}
+               </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4 text-center py-8">
+             <p className="text-sm text-white/50">
+              No conceptual view is defined in this problem's JSON file.
+            </p>
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="flex items-center gap-2 mx-auto px-4 py-2 bg-violet-600/20 text-violet-400 border border-violet-500/30 rounded-lg hover:bg-violet-600/30 transition-colors disabled:opacity-50"
+            >
+              {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {isGenerating ? 'Generating...' : 'AI Generate Concept'}
+            </button>
+          </div>
+        )}
+
+        <div className="mt-12 border-t border-white/10 pt-6">
+          <h3 className="text-sm font-semibold text-white/80 mb-4 flex items-center gap-2">
+            <Sparkles size={14} className="text-violet-400" /> AI Tutor
+          </h3>
+          <div className="bg-white/5 rounded-lg border border-white/10 h-64 flex flex-col">
+            <div className="flex-grow p-4 overflow-y-auto space-y-4">
+              {chatHistory.length === 0 ? (
+                <p className="text-xs text-white/40 text-center mt-8">Ask me anything about this problem or your code!</p>
+              ) : (
+                chatHistory.map((msg, i) => (
+                  <div key={i} className={`text-xs ${msg.role === 'user' ? 'text-right text-white/80' : 'text-left text-violet-300'} whitespace-pre-wrap`}>
+                    <span className={`inline-block px-3 py-2 rounded-lg ${msg.role === 'user' ? 'bg-white/10' : 'bg-violet-900/30'}`}>
+                      {msg.content}
+                    </span>
+                  </div>
+                ))
+              )}
+              {isChatting && (
+                <div className="text-xs text-left text-violet-300">
+                  <span className="inline-block px-3 py-2 rounded-lg bg-violet-900/30 flex items-center gap-2">
+                    <Loader2 size={12} className="animate-spin" /> Thinking...
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="border-t border-white/10 p-2 flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleChat()}
+                placeholder="Ask a question..."
+                className="flex-grow bg-black/40 border border-white/10 rounded px-3 text-xs text-white outline-none focus:border-violet-500/50"
+              />
+              <button
+                onClick={handleChat}
+                disabled={isChatting || !chatInput.trim()}
+                className="p-2 bg-violet-600 text-white rounded hover:bg-violet-500 disabled:opacity-50 transition-colors"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
