@@ -123,7 +123,7 @@ export default function SmartArrayCanvas({
         </div>
       ) : (
         /* Cell block mode */
-        <div className="relative flex flex-wrap gap-1.5">
+        <div className="relative flex flex-wrap gap-1.5 mt-8">
           <AnimatePresence>
             {values.map((val, idx) => {
               const cellPtrs = pointerMap[idx] ?? [];
@@ -134,26 +134,28 @@ export default function SmartArrayCanvas({
                   initial={{ opacity: 0, scale: 0.7 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.12, delay: idx * 0.015 }}
-                  className="flex flex-col items-center gap-0.5"
+                  className="relative flex flex-col items-center gap-0.5"
                 >
                   {/* Pointer labels above cell */}
-                  <div className="h-5 flex items-end justify-center gap-0.5">
-                    {cellPtrs.map(p => {
-                      const colorClass = POINTER_PALETTE[pointerNames.indexOf(p) % POINTER_PALETTE.length];
-                      return (
-                        <motion.div
-                          key={p}
-                          layout
-                          layoutId={`ptr-${name}-${p}`}
-                          initial={{ opacity: 0, y: -6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`flex flex-col items-center`}
-                        >
-                          <span className={`text-[9px] font-bold font-mono ${colorClass.split(' ')[0]}`}>{p}</span>
-                          <span className={`text-[8px] ${colorClass.split(' ')[0]}`}>▼</span>
-                        </motion.div>
-                      );
-                    })}
+                  <div className="absolute bottom-full mb-1 flex flex-col items-center justify-end pointer-events-none z-10">
+                    <div className="flex items-end justify-center gap-1 whitespace-nowrap">
+                      {cellPtrs.map(p => {
+                        const colorClass = POINTER_PALETTE[pointerNames.indexOf(p) % POINTER_PALETTE.length];
+                        return (
+                          <motion.div
+                            key={p}
+                            layout
+                            layoutId={`ptr-${name}-${p}`}
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`flex flex-col items-center leading-none`}
+                          >
+                            <span className={`text-[10px] font-bold font-mono ${colorClass.split(' ')[0]}`}>{p}</span>
+                            <span className={`text-[8px] -mt-0.5 ${colorClass.split(' ')[0]}`}>▼</span>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Cell */}

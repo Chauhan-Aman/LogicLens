@@ -61,7 +61,7 @@ export default function ArrayRenderer({ name, state, pointers = {}, maxVisible =
         <span className="text-xs text-white/20">[ {values.length} ]</span>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="relative flex flex-wrap gap-1.5 mt-8">
         <AnimatePresence>
           {values.map((val, idx) => (
             <motion.div
@@ -70,18 +70,19 @@ export default function ArrayRenderer({ name, state, pointers = {}, maxVisible =
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.15, delay: idx * 0.02 }}
-              className="flex flex-col items-center gap-1"
+              className="relative flex flex-col items-center gap-1"
             >
               {/* Pointer labels above */}
-              <div className="h-5 flex items-end justify-center gap-0.5">
+              <div className="absolute bottom-full mb-1 flex items-end justify-center gap-1 whitespace-nowrap pointer-events-none z-10">
                 {(pointerMap[idx] ?? []).map(p => (
                   <motion.span
                     key={p}
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`text-[10px] font-bold font-mono ${getPointerColor(p)}`}
+                    className={`flex flex-col items-center leading-none text-[10px] font-bold font-mono ${getPointerColor(p)}`}
                   >
-                    {p}
+                    <span>{p}</span>
+                    <span className="text-[8px] -mt-0.5">▼</span>
                   </motion.span>
                 ))}
               </div>
