@@ -1,9 +1,10 @@
 'use client';
 
-import { useLabStore } from '@/store/labStore';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLabStore } from '@/store/labStore';
+import { Check, X, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { formatJsonInput } from '@/utils/formatters';
 
 export default function TestResultsPanel() {
   const { testResults, setTimeline, setInputJson, setExecutionError } = useLabStore();
@@ -64,17 +65,17 @@ export default function TestResultsPanel() {
                         }
                       </td>
                       <td className="px-4 py-2 text-white/70 truncate max-w-[150px]">
-                        {JSON.stringify(res.input)}
+                        {formatJsonInput(res.input)}
                       </td>
                       <td className="px-4 py-2 text-white/70 truncate max-w-[120px]">
-                        {JSON.stringify(res.expected)}
+                        {formatJsonInput(res.expected)}
                       </td>
                       <td className="px-4 py-2 truncate max-w-[120px]">
                         {res.error ? (
                           <span className="text-red-400/80 italic">Error</span>
                         ) : (
                           <span className={res.passed ? 'text-emerald-400' : 'text-red-400'}>
-                            {JSON.stringify(res.actual)}
+                            {formatJsonInput(res.actual)}
                           </span>
                         )}
                       </td>

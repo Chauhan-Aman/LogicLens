@@ -10,6 +10,7 @@ import { buildTimeline } from '@/engine/stateEngine';
 import { detectStructures } from '@/engine/detector';
 import { runAllTests } from '@/engine/testRunner';
 import TestResultsPanel from './TestResultsPanel';
+import { formatJsonInput } from '@/utils/formatters';
 
 // Monaco editor is SSR-incompatible, load client-side only
 const MonacoEditor = dynamic(
@@ -101,7 +102,7 @@ export default function CodeEditor() {
       // If there are failures, load the first failure into visualizer
       const firstFailure = results.find(r => !r.passed);
       if (firstFailure) {
-        setInputJson(JSON.stringify(firstFailure.input, null, 2));
+        setInputJson(formatJsonInput(firstFailure.input));
         if (firstFailure.error) {
           setExecutionError(firstFailure.error);
           setTimeline([]);
@@ -110,7 +111,7 @@ export default function CodeEditor() {
         }
       } else if (results.length > 0) {
         // Load the first passing test if all passed
-        setInputJson(JSON.stringify(results[0].input, null, 2));
+        setInputJson(formatJsonInput(results[0].input));
         setTimeline(results[0].timeline);
       }
 
@@ -308,22 +309,6 @@ export default function CodeEditor() {
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs font-mono text-white/30 uppercase tracking-widest mr-2">Input</span>
             {activeProblem?.testCases?.map((tc, idx) => {
-              function formatJsonInput(obj: any): string {
-                if (typeof obj !== 'object' || obj === null) return JSON.stringify(obj);
-                
-                if (Array.isArray(obj)) {
-                  const isSimple = obj.every(item => typeof item !== 'object' || item === null);
-                  if (isSimple && obj.length <= 50) {
-                    return `[${obj.map(x => JSON.stringify(x)).join(', ')}]`;
-                  }
-                  return `[\n${obj.map(x => `  ${formatJsonInput(x).split('\n').join('\n  ')}`).join(',\n')}\n]`;
-                }
-
-                const keys = Object.keys(obj);
-                if (keys.length === 0) return '{}';
-                return `{\n${keys.map(k => `  "${k}": ${formatJsonInput(obj[k]).split('\n').join('\n  ')}`).join(',\n')}\n}`;
-              }
-
               return (
                 <button
                   key={idx}

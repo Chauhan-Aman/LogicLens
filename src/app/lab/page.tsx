@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import AddProblemModal from '@/components/lab/AddProblemModal';
 import { PROBLEMS } from '@/data/index';
 import { useMemo } from 'react';
+import { formatJsonInput } from '@/utils/formatters';
 
 const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
 
@@ -58,11 +59,11 @@ export default function LabPage() {
     setUserCode(problem.solutions[defaultSolIdx]?.code ?? '');
     setActiveLanguage(problem.solutions[defaultSolIdx]?.language ?? 'javascript');
     if (problem.testCases && problem.testCases.length > 0) {
-      setInputJson(JSON.stringify(problem.testCases[0].input, null, 2));
+      setInputJson(formatJsonInput(problem.testCases[0].input));
     } else {
       try {
-        setInputJson(JSON.stringify(JSON.parse(problem.defaultInput), null, 2));
-      } catch {
+        setInputJson(formatJsonInput(JSON.parse(problem.defaultInput)));
+      } catch (e) {
         setInputJson(problem.defaultInput);
       }
     }
