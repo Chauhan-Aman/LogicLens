@@ -5,7 +5,7 @@ import { useAIStore } from '@/store/aiStore';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { askTutor, generateConceptualView } from '@/engine/llmClient';
-import { Sparkles, Send, Loader2, Trash2 } from 'lucide-react';
+import { Sparkles, Send, Loader2, Trash2, Maximize2, X } from 'lucide-react';
 
 export default function ConceptualVisualizer() {
   const { activeProblem, userCode } = useLabStore();
@@ -14,6 +14,7 @@ export default function ConceptualVisualizer() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [isChatting, setIsChatting] = useState(false);
+  const [isGraphicExpanded, setIsGraphicExpanded] = useState(false);
 
   if (!activeProblem) {
     return null;
@@ -77,11 +78,44 @@ export default function ConceptualVisualizer() {
             <p className="text-sm text-white/60">{concept.optimalConcept}</p>
             
             {concept.graphic && concept.graphic.length > 0 && (
-               <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50 whitespace-pre overflow-x-auto">
-                 {concept.graphic.map((line, i) => (
-                   <div key={i}>{line}</div>
-                 ))}
-               </div>
+               <>
+                 <div className="relative group">
+                   <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50 whitespace-pre overflow-x-auto">
+                     {concept.graphic.map((line, i) => (
+                       <div key={i}>{line}</div>
+                     ))}
+                   </div>
+                   <button 
+                     onClick={() => setIsGraphicExpanded(true)}
+                     className="absolute top-2 right-2 p-1.5 bg-black/40 text-white/50 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60 hover:text-white/80"
+                   >
+                     <Maximize2 size={14} />
+                   </button>
+                 </div>
+                 
+                 {isGraphicExpanded && (
+                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8">
+                     <div className="bg-[#12121a] border border-white/10 rounded-xl w-full max-w-5xl h-full max-h-[80vh] flex flex-col shadow-2xl">
+                       <div className="flex justify-between items-center p-4 border-b border-white/10">
+                         <h3 className="font-bold text-white/80 flex items-center gap-2">
+                           <Sparkles size={16} className="text-violet-400" /> {activeProblem.title} — Conceptual Trace
+                         </h3>
+                         <button 
+                           onClick={() => setIsGraphicExpanded(false)}
+                           className="p-1.5 text-white/50 hover:bg-white/10 rounded transition-colors"
+                         >
+                           <X size={18} />
+                         </button>
+                       </div>
+                       <div className="flex-grow p-6 overflow-auto font-mono text-sm text-white/70 whitespace-pre">
+                         {concept.graphic.map((line, i) => (
+                           <div key={i}>{line}</div>
+                         ))}
+                       </div>
+                     </div>
+                   </div>
+                 )}
+               </>
             )}
           </div>
         ) : (
