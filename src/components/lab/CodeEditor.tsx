@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Play, RotateCcw, Cpu, Save } from 'lucide-react';
 import { useLabStore } from '@/store/labStore';
 import { useSavedSolutionsStore } from '@/store/savedSolutionsStore';
+import { useCustomProblemsStore } from '@/store/customProblemsStore';
 import { executeCode } from '@/engine/executor';
 import { buildTimeline } from '@/engine/stateEngine';
 import { detectStructures } from '@/engine/detector';
@@ -45,12 +46,14 @@ export default function CodeEditor() {
     setDetection,
     setExecutionError,
     activeProblem,
+    setActiveProblem,
     activeLanguage,
     setActiveLanguage,
     setActiveSolution,
   } = useLabStore();
   
   const { saveSolution, savedSolutions } = useSavedSolutionsStore();
+  const { updateProblem } = useCustomProblemsStore();
 
   const [isRunning, setIsRunning] = useState(false);
   const [isRunningAll, setIsRunningAll] = useState(false);
@@ -323,7 +326,29 @@ export default function CodeEditor() {
               );
             })}
 
-            <span className="text-xs text-white/15 ml-2">JSON</span>
+            <span className="text-xs text-white/15 ml-2 mr-2">JSON</span>
+            {activeProblem && (
+              <button
+                onClick={() => {
+                  try {
+                    const currentInput = JSON.parse(inputJson);
+                    const newTestCase = { input: currentInput, expected: null };
+                    const updatedProblem = { ...activeProblem, testCases: [...(activeProblem.testCases || []), newTestCase] };
+                    setActiveProblem(updatedProblem);
+                    if (updatedProblem.tags.includes('Custom')) {
+                      updateProblem(updatedProblem);
+                    }
+                    setActiveTab((activeProblem.testCases?.length || 0));
+                  } catch (e) {
+                    alert('Invalid JSON! Please format the input as valid JSON before saving as a test case.');
+                  }
+                }}
+                title="Save current JSON as new Test Case"
+                className="flex items-center justify-center w-5 h-5 rounded bg-white/5 hover:bg-emerald-500/20 text-white/40 hover:text-emerald-400 transition-colors"
+              >
+                +
+              </button>
+            )}
           </div>
           <button
             onClick={() => {
