@@ -3,7 +3,7 @@
 
 // --- INJECTED GLOBAL INPUTS ---
 
-std::vector<int> prices = {7, 1, 5, 3, 6, 4};
+std::vector<int> prices = {3, 2, 6, 5, 0, 3, 6, 5, 0};
 
 
 struct __LL_Init {
