@@ -54,6 +54,9 @@ export default function CodeEditor() {
   const [isRunning, setIsRunning] = useState(false);
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [activeTab, setActiveTab] = useState<number | null>(null);
+  
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveName, setSaveName] = useState('');
 
   const run = useCallback(async () => {
     if (!userCode.trim()) return;
@@ -183,26 +186,69 @@ export default function CodeEditor() {
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 relative">
+          {showSaveModal && (
+            <div className="absolute top-10 right-0 z-50 bg-[#1e1e24] border border-white/10 rounded-lg shadow-xl shadow-black/50 p-3 w-64 animate-in fade-in zoom-in-95 duration-100">
+              <div className="text-xs font-semibold text-white/80 mb-2">Save Solution</div>
+              <input 
+                type="text" 
+                value={saveName}
+                onChange={e => setSaveName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && saveName.trim() && activeProblem) {
+                    saveSolution({
+                      problemId: activeProblem.id,
+                      name: saveName.trim(),
+                      language: activeLanguage,
+                      code: userCode,
+                    });
+                    const numDefaults = activeProblem.solutions.length;
+                    const numCustom = savedSolutions.filter(s => s.problemId === activeProblem.id).length;
+                    setActiveSolution(numDefaults + numCustom);
+                    setShowSaveModal(false);
+                    setSaveName('');
+                  } else if (e.key === 'Escape') {
+                    setShowSaveModal(false);
+                  }
+                }}
+                autoFocus
+                placeholder="e.g. Optimized HashMap"
+                className="w-full bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-emerald-500/50 mb-3"
+              />
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setShowSaveModal(false)}
+                  className="px-3 py-1 text-[11px] font-medium text-white/50 hover:text-white/80 rounded transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    if (saveName.trim() && activeProblem) {
+                      saveSolution({
+                        problemId: activeProblem.id,
+                        name: saveName.trim(),
+                        language: activeLanguage,
+                        code: userCode,
+                      });
+                      const numDefaults = activeProblem.solutions.length;
+                      const numCustom = savedSolutions.filter(s => s.problemId === activeProblem.id).length;
+                      setActiveSolution(numDefaults + numCustom);
+                      setShowSaveModal(false);
+                      setSaveName('');
+                    }
+                  }}
+                  disabled={!saveName.trim()}
+                  className="px-3 py-1 text-[11px] font-medium bg-emerald-500 text-black rounded hover:bg-emerald-400 disabled:opacity-50 transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          )}
+          
           <button
-            onClick={() => {
-              if (!activeProblem) return;
-              const name = prompt('Enter a name for this solution:');
-              if (name && name.trim()) {
-                saveSolution({
-                  problemId: activeProblem.id,
-                  name: name.trim(),
-                  language: activeLanguage,
-                  code: userCode,
-                });
-                // We set active solution to the newly saved one.
-                // Assuming it gets appended, its index will be the sum of default + previous custom + 1.
-                // A simpler way is to just let the user click it, or calculate the index:
-                const numDefaults = activeProblem.solutions.length;
-                const numCustom = savedSolutions.filter(s => s.problemId === activeProblem.id).length;
-                setActiveSolution(numDefaults + numCustom);
-              }
-            }}
+            onClick={() => setShowSaveModal(true)}
             disabled={!userCode.trim()}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-all duration-150 disabled:opacity-50"
           >

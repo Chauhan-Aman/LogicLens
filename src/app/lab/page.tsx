@@ -17,7 +17,7 @@ import { useMemo } from 'react';
 const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
 
 export default function LabPage() {
-  const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, setActiveLanguage, activeSolution, setActiveSolution } = useLabStore();
+  const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, activeLanguage, setActiveLanguage, activeSolution, setActiveSolution } = useLabStore();
   const { savedSolutions, deleteSolution } = useSavedSolutionsStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
@@ -27,8 +27,8 @@ export default function LabPage() {
     if (!activeProblem) return [];
     const defaultSols = activeProblem.solutions.map(s => ({ ...s, isSaved: false, id: `default-${s.name}` }));
     const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id).map(s => ({ ...s, isSaved: true }));
-    return [...defaultSols, ...customSols];
-  }, [activeProblem, savedSolutions]);
+    return [...defaultSols, ...customSols].filter(s => s.language === activeLanguage);
+  }, [activeProblem, savedSolutions, activeLanguage]);
 
   const filtered = PROBLEMS.filter(p => {
     const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
