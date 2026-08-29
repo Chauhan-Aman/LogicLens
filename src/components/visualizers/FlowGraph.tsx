@@ -280,60 +280,45 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
     return checkActive(node);
   }, [node, currentStep]);
 
-  const [isExpanded, setIsExpanded] = useState<boolean>(isActive || true); // default expanded
+  const [isExpanded, setIsExpanded] = useState<boolean>(isActive || true);
+  const [showAllIterations, setShowAllIterations] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (isActive) setIsExpanded(true);
-  }, [isActive]);
-
-  let childrenToRender: React.ReactNode[] = [];
-  if (node.children.length <= 6) {
-    childrenToRender = node.children.map((child, i) => (
-      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} index={i + 1} />
-    ));
-  } else {
-    // Find active index
-    const activeIndex = node.children.findIndex(c => {
+  // Find active index to auto-expand
+  const activeIndex = React.useMemo(() => {
+    return node.children.findIndex(c => {
       const checkActive = (n: ExecutionNode): boolean => {
         if (n.snapshots.some(s => s && (s as any).event && s.step === currentStep)) return true;
         return n.children.some(checkActive);
       };
       return checkActive(c);
     });
+  }, [node, currentStep]);
 
-    const renderNode = (child: ExecutionNode, i: number) => (
+  useEffect(() => {
+    if (isActive) setIsExpanded(true);
+    if (activeIndex >= 3) setShowAllIterations(true);
+  }, [isActive, activeIndex]);
+
+  let childrenToRender: React.ReactNode[] = [];
+  if (node.children.length <= 3 || showAllIterations) {
+    childrenToRender = node.children.map((child, i) => (
       <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} index={i + 1} />
-    );
-
-    const renderPlaceholder = (count: number, key: string) => (
-      <div key={key} className="flex flex-col items-center my-2 opacity-50">
+    ));
+  } else {
+    childrenToRender = node.children.slice(0, 3).map((child, i) => (
+      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} index={i + 1} />
+    ));
+    
+    childrenToRender.push(
+      <div key="show-more" className="flex flex-col items-center my-2">
         <div className="w-[1px] h-4 bg-white/10" />
-        <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-white/50 flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-          {count} iterations skipped
-          <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-        </div>
+        <button onClick={() => setShowAllIterations(true)} className="px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/30 text-[10px] font-mono text-blue-400 hover:bg-blue-500/20 transition-colors flex items-center gap-2 cursor-pointer z-10 relative">
+          <Plus size={12} />
+          Show {node.children.length - 3} more iterations
+        </button>
         <div className="w-[1px] h-4 bg-white/10" />
       </div>
     );
-
-    const showIndices = new Set([0, 1, node.children.length - 1]);
-    if (activeIndex !== -1) {
-      showIndices.add(activeIndex - 1);
-      showIndices.add(activeIndex);
-      showIndices.add(activeIndex + 1);
-    }
-    
-    const validIndices = Array.from(showIndices).filter(i => i >= 0 && i < node.children.length).sort((a,b) => a-b);
-    
-    let lastIndex = -1;
-    for (const i of validIndices) {
-      if (i > lastIndex + 1) {
-        childrenToRender.push(renderPlaceholder(i - lastIndex - 1, `skip-${lastIndex}-${i}`));
-      }
-      childrenToRender.push(renderNode(node.children[i], i));
-      lastIndex = i;
-    }
   }
 
   const borderColor = isActive ? 'border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)] bg-blue-500/10' : 'border-white/20 bg-[#0a0a0f] hover:border-white/40';
