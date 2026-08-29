@@ -307,18 +307,37 @@ export default function CodeEditor() {
         <div className="px-4 py-2 flex items-center justify-between overflow-x-auto">
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs font-mono text-white/30 uppercase tracking-widest mr-2">Input</span>
-            {activeProblem?.testCases?.map((tc, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setActiveTab(idx);
-                  setInputJson(JSON.stringify(tc.input, null, 2));
-                }}
-                className={`text-[10px] px-3 py-1 rounded transition-colors ${activeTab === idx ? 'bg-white/20 text-white' : 'bg-white/5 text-white/50 hover:bg-white/10'}`}
-              >
-                Test {idx + 1}
-              </button>
-            ))}
+            {activeProblem?.testCases?.map((tc, idx) => {
+              function formatJsonInput(obj: any): string {
+                if (typeof obj !== 'object' || obj === null) return JSON.stringify(obj);
+                
+                if (Array.isArray(obj)) {
+                  const isSimple = obj.every(item => typeof item !== 'object' || item === null);
+                  if (isSimple && obj.length <= 50) {
+                    return `[${obj.map(x => JSON.stringify(x)).join(', ')}]`;
+                  }
+                  return `[\n${obj.map(x => `  ${formatJsonInput(x).split('\n').join('\n  ')}`).join(',\n')}\n]`;
+                }
+
+                const keys = Object.keys(obj);
+                if (keys.length === 0) return '{}';
+                return `{\n${keys.map(k => `  "${k}": ${formatJsonInput(obj[k]).split('\n').join('\n  ')}`).join(',\n')}\n}`;
+              }
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setActiveTab(idx);
+                    setInputJson(formatJsonInput(tc.input));
+                  }}
+                  className={`text-[10px] px-3 py-1 rounded transition-colors ${activeTab === idx ? 'bg-white/20 text-white' : 'bg-white/5 text-white/50 hover:bg-white/10'}`}
+                >
+                  Test {idx + 1}
+                </button>
+              );
+            })}
+
             <span className="text-xs text-white/15 ml-2">JSON</span>
           </div>
           <button
