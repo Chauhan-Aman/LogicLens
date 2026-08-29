@@ -8,6 +8,7 @@ interface ProblemCardProps {
   problem: Problem;
   active?: boolean;
   onSelect: (p: Problem) => void;
+  onDelete?: (p: Problem) => void;
 }
 
 const DIFFICULTY_STYLES: Record<string, string> = {
@@ -23,22 +24,33 @@ const TAG_COLORS = [
   'bg-teal-500/10 text-teal-300/90 ring-1 ring-teal-500/20',
 ];
 
-export default function ProblemCard({ problem, active, onSelect }: ProblemCardProps) {
+export default function ProblemCard({ problem, active, onSelect, onDelete }: ProblemCardProps) {
   return (
     <motion.button
       layout
       whileHover={{ x: 2 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => onSelect(problem)}
-      className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 ${
+      className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 relative group ${
         active
           ? 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20'
           : 'bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15'
       }`}
     >
+      {onDelete && (
+        <div 
+          className="absolute top-2 right-2 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 rounded-md text-white/30 hover:text-red-400 z-10"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(problem);
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 pr-6">
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${DIFFICULTY_STYLES[problem.difficulty]}`}>
               {problem.difficulty}
             </span>

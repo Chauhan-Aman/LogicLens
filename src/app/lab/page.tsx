@@ -22,7 +22,7 @@ const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
 export default function LabPage() {
   const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, activeLanguage, setActiveLanguage, activeSolution, setActiveSolution } = useLabStore();
   const { savedSolutions, deleteSolution } = useSavedSolutionsStore();
-  const { customProblems, addProblem } = useCustomProblemsStore();
+  const { customProblems, addProblem, deleteProblem } = useCustomProblemsStore();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
@@ -157,6 +157,7 @@ export default function LabPage() {
                   problem={p}
                   active={activeProblem?.id === p.id}
                   onSelect={selectProblem}
+                  onDelete={p.tags.includes('Custom') ? (prob) => deleteProblem(prob.id) : undefined}
                 />
               ))}
             </div>
