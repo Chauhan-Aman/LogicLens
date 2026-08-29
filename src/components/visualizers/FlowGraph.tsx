@@ -3,7 +3,7 @@
 import { useLabStore } from '@/store/labStore';
 import { useRef, useEffect, useState, useMemo } from 'react';
 import FlowNode from './FlowNode';
-import { ArrowRight, ChevronDown, ChevronRight, GitBranch, Play, Plus, RefreshCcw, Variable, ChevronLeft, Maximize, Minimize } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, GitBranch, Play, Plus, Minus, RefreshCcw, Variable, ChevronLeft, Maximize, Minimize } from 'lucide-react';
 import type { StateSnapshot } from '@/engine/events';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -300,10 +300,25 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
   }, [isActive, activeIndex]);
 
   let childrenToRender: React.ReactNode[] = [];
-  if (node.children.length <= 3 || showAllIterations) {
+  if (node.children.length <= 3) {
     childrenToRender = node.children.map((child, i) => (
       <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} index={i + 1} />
     ));
+  } else if (showAllIterations) {
+    childrenToRender = node.children.map((child, i) => (
+      <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} index={i + 1} />
+    ));
+    
+    childrenToRender.push(
+      <div key="hide-more" className="flex flex-col items-center my-2">
+        <div className="w-[1px] h-4 bg-white/10" />
+        <button onClick={() => setShowAllIterations(false)} className="px-4 py-2 rounded-full bg-slate-500/10 border border-slate-500/30 text-[10px] font-mono text-slate-400 hover:bg-slate-500/20 transition-colors flex items-center gap-2 cursor-pointer z-10 relative">
+          <Minus size={12} />
+          Hide {node.children.length - 3} extra iterations
+        </button>
+        <div className="w-[1px] h-4 bg-white/10" />
+      </div>
+    );
   } else {
     childrenToRender = node.children.slice(0, 3).map((child, i) => (
       <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} index={i + 1} />
