@@ -3,7 +3,7 @@
 
 // --- INJECTED GLOBAL INPUTS ---
 
-std::vector<int> nums = {2, 7, 11, 15};
+std::vector<int> nums = {-1, 0, 3, 5, 9, 12};
 int target = 9;
 
 
@@ -18,20 +18,29 @@ struct __LL_Init {
 // ------------------------------
 
 // --- USER CODE ---
-// Brute Force C++ â€” O(nÂ²)
+// Binary Search C++ â€” O(log n)
 #include <iostream>
 #include <vector>
 
 using namespace std;
 
 int main() {
-  for (int i = 0; i < nums.size(); i++) {
-    for (int j = i + 1; j < nums.size(); j++) {
-      int sum = nums[i] + nums[j];
-      if (sum == target) {
-        cout << "[" << i << ", " << j << "]" << endl;
-        return 0;
-      }
+  int left = 0;
+  int right = nums.size() - 1;
+
+  while (left <= right) {
+    int mid = left + (right - left) / 2;
+    int midVal = nums[mid];
+    
+    if (midVal == target) {
+      cout << "Found target at index " << mid << endl;
+      return 0;
+    } else if (midVal < target) {
+      cout << "midVal < target, search right half" << endl;
+      left = mid + 1;
+    } else {
+      cout << "midVal > target, search left half" << endl;
+      right = mid - 1;
     }
   }
   return 0;

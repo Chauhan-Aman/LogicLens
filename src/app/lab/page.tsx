@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, ChevronLeft, ChevronRight, Layers, BookOpen, Cpu, GitBranch, X } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, Layers, BookOpen, Cpu, GitBranch, X, Plus } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import CodeEditor from '@/components/lab/CodeEditor';
 import ProblemPanel from '@/components/lab/ProblemPanel';
@@ -11,6 +11,9 @@ import ExecutionControls from '@/components/lab/ExecutionControls';
 import ProblemCard from '@/components/collection/ProblemCard';
 import { useLabStore, type Problem } from '@/store/labStore';
 import { useSavedSolutionsStore } from '@/store/savedSolutionsStore';
+import { useCustomProblemsStore } from '@/store/customProblemsStore';
+import { v4 as uuidv4 } from 'uuid';
+import AddProblemModal from '@/components/lab/AddProblemModal';
 import { PROBLEMS } from '@/data/index';
 import { useMemo } from 'react';
 
@@ -19,9 +22,22 @@ const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
 export default function LabPage() {
   const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, activeLanguage, setActiveLanguage, activeSolution, setActiveSolution } = useLabStore();
   const { savedSolutions, deleteSolution } = useSavedSolutionsStore();
+  const { customProblems, addProblem } = useCustomProblemsStore();
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
   const [diffFilter, setDiffFilter] = useState('All');
+  const [showAddProblem, setShowAddProblem] = useState(false);
+
+  // Combine static and custom problems
+  const allProblems = useMemo(() => [...PROBLEMS, ...customProblems], [customProblems]);
+
+  const filtered = allProblems.filter(p => {
+    const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
+      p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
+    const matchDiff = diffFilter === 'All' || p.difficulty === diffFilter;
+    return matchSearch && matchDiff;
+  });
 
   const allSolutions = useMemo(() => {
     if (!activeProblem) return [];
@@ -30,12 +46,6 @@ export default function LabPage() {
     return [...defaultSols, ...customSols].filter(s => s.language === activeLanguage);
   }, [activeProblem, savedSolutions, activeLanguage]);
 
-  const filtered = PROBLEMS.filter(p => {
-    const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
-    const matchDiff = diffFilter === 'All' || p.difficulty === diffFilter;
-    return matchSearch && matchDiff;
-  });
 
   function selectProblem(problem: Problem) {
     setActiveProblem(problem);
@@ -82,8 +92,8 @@ export default function LabPage() {
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="flex flex-col border-r border-white/8 bg-[#0a0a12] shrink-0 overflow-hidden"
           >
-            {/* Logo */}
-            <div className="px-4 py-4 border-b border-white/8">
+            {/* Logo & Actions */}
+            <div className="px-4 py-4 border-b border-white/8 flex justify-between items-center">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-black text-xs font-bold">
                   LL
@@ -93,6 +103,13 @@ export default function LabPage() {
                   <p className="text-[10px] text-white/30">Algorithm Lab</p>
                 </div>
               </div>
+              <button 
+                onClick={() => setShowAddProblem(true)} 
+                className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                title="Create Custom Problem"
+              >
+                <Plus size={16} />
+              </button>
             </div>
 
             {/* Search */}
@@ -261,6 +278,15 @@ export default function LabPage() {
           <ExecutionControls />
         </div>
       </div>
+
+      <AddProblemModal
+        isOpen={showAddProblem}
+        onClose={() => setShowAddProblem(false)}
+        onSave={(problem) => {
+          addProblem(problem);
+          selectProblem(problem);
+        }}
+      />
     </div>
   );
 }

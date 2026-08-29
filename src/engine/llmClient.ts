@@ -79,3 +79,42 @@ Ensure the graphic array contains clean, readable lines of text simulating an ex
     throw new Error('Failed to generate conceptual view using Local LLM: ' + err.message);
   }
 }
+
+export async function generateProblemTemplate(problemTitle: string): Promise<any> {
+  const prompt = `You are an expert algorithm problem creator. Generate a comprehensive JSON problem definition for the data structures and algorithms problem: "${problemTitle}".
+
+Output ONLY valid JSON matching this schema exactly, with NO markdown formatting, NO backticks, and NO extra text:
+{
+  "description": "A detailed 3-4 sentence explanation of the problem, including the input and expected output.",
+  "examples": [
+    { "input": "string representation of input", "output": "string representation of output" }
+  ],
+  "defaultInput": "A JSON string representing the default variables for the execution environment, e.g. '{ \\"nums\\": [1, 2, 3] }'",
+  "code": "A basic function signature in Javascript/TypeScript solving the problem, with a return statement.",
+  "structures": ["array"] 
+}`;
+
+  try {
+    const res = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama3.2',
+        prompt: prompt,
+        stream: false,
+        format: 'json',
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to connect to Ollama.');
+    }
+
+    const data = await res.json();
+    return JSON.parse(data.response);
+  } catch (err: any) {
+    throw new Error('Failed to auto-generate problem template: ' + err.message);
+  }
+}
