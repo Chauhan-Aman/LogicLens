@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export interface ExecutionNode {
   id: string;
-  type: 'function' | 'loop' | 'iteration' | 'step';
+  type: 'function' | 'loop' | 'iteration' | 'step' | 'logic';
   label?: string;
   children: ExecutionNode[];
   snapshots: StateSnapshot[];
@@ -53,17 +53,12 @@ function buildExecutionTree(timeline: StateSnapshot[]): ExecutionNode {
         stack.pop();
       }
     } else {
-      const lastChild = currentBlock.children[currentBlock.children.length - 1];
-      if (lastChild && lastChild.type === 'step' && snap.event.type === 'VARIABLE_UPDATE' && lastChild.snapshots[lastChild.snapshots.length - 1].event.type === 'VARIABLE_UPDATE') {
-        lastChild.snapshots.push(snap);
-      } else {
-        currentBlock.children.push({
-          id: `step-${snap.step}`,
-          type: 'step',
-          snapshots: [snap],
-          children: []
-        });
-      }
+      currentBlock.children.push({
+        id: `step-${snap.step}`,
+        type: 'step',
+        snapshots: [snap],
+        children: []
+      });
     }
   }
   return root;
@@ -191,6 +186,81 @@ function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: Exe
           )}
         </AnimatePresence>
       </div>
+    </div>
+  );
+}
+
+function TreeLogic({ node, currentStep, setCurrentStep }: { node: ExecutionNode, currentStep: number, setCurrentStep: (s: number) => void }) {
+  const isActive = React.useMemo(() => {
+    const checkActive = (n: ExecutionNode): boolean => {
+      if (n.snapshots.some(s => s && (s as any).event && s.step === currentStep)) return true;
+      return n.children.some(checkActive);
+    };
+    return checkActive(node);
+  }, [node, currentStep]);
+
+  const [isExpanded, setIsExpanded] = useState<boolean>(isActive || true);
+
+  useEffect(() => {
+    if (isActive) setIsExpanded(true);
+  }, [isActive]);
+
+  const borderColor = isActive ? 'border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)] bg-orange-500/10' : 'border-white/20 bg-[#0a0a0f] hover:border-white/40';
+
+  return (
+    <div className="flex flex-col items-center w-full my-4">
+      <div className="w-[1px] h-6 bg-white/10" />
+      <div 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={`w-[340px] rounded-lg border ${borderColor} p-4 flex items-center justify-between cursor-pointer transition-all duration-300 z-10 shrink-0 shadow-lg`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-orange-500/10 flex items-center justify-center text-orange-400 border border-orange-500/20 transform rotate-45">
+            <GitBranch size={16} className="-rotate-45" />
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-sm font-mono font-bold text-white/90">
+              {node.label || 'Condition'}
+            </span>
+            <span className="text-[10px] text-white/40 uppercase tracking-wider">
+              Logical Branch (Yes)
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 border-l border-white/10 pl-4">
+          <div className="flex flex-col text-right hidden sm:flex">
+             <span className="text-[10px] text-white/40 uppercase tracking-wider">Flow</span>
+             <span className="text-xs font-mono text-emerald-400">Condition Met</span>
+          </div>
+          {isExpanded ? <ChevronDown size={16} className="text-white/40" /> : <ChevronRight size={16} className="text-white/40" />}
+        </div>
+      </div>
+      
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="flex flex-col items-center overflow-hidden w-full"
+          >
+            <div className="flex items-start justify-center w-full relative">
+              {/* Branch indicator line */}
+              <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-emerald-500/30 -translate-x-1/2" />
+              
+              {/* Nested children */}
+              <div className="flex flex-col items-center relative z-10 bg-[#060608] px-4 py-2 mt-4 rounded-xl border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)] w-11/12 max-w-[600px]">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#060608] px-2 text-[10px] font-mono text-emerald-500 uppercase font-bold tracking-wider border border-emerald-500/30 rounded-full">
+                  YES FLOW
+                </div>
+                {node.children.map(child => (
+                   <TreeNode key={child.id} node={child} currentStep={currentStep} setCurrentStep={setCurrentStep} />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -326,8 +396,10 @@ function TreeLoop({ node, currentStep, setCurrentStep }: { node: ExecutionNode, 
 }
 
 function TreeNode({ node, currentStep, setCurrentStep, index }: { node: ExecutionNode, currentStep: number, setCurrentStep: (s: number) => void, index?: number }) {
-  if (node.type === 'loop') return <TreeLoop node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} />;
+  if (node.type === 'step') return <TreeStep node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} />;
   if (node.type === 'iteration') return <TreeIteration node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} index={index} />;
+  if (node.type === 'loop') return <TreeLoop node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} />;
+  if (node.type === 'logic') return <TreeLogic node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} />;
   
   // function or step
   if (node.children.length === 0) return <TreeStep node={node} currentStep={currentStep} setCurrentStep={setCurrentStep} />;

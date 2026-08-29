@@ -189,6 +189,53 @@ export function transpileCode(code: string): string {
         DoWhileStatement: handleLoop,
         ForInStatement: handleLoop,
         ForOfStatement: handleLoop,
+
+        // Track Logic
+        IfStatement(path: any) {
+          if (path.node.loc === null) return;
+          
+          if (t.isBlockStatement(path.node.consequent)) {
+            const enterCall = t.expressionStatement(
+              t.callExpression(
+                t.memberExpression(t.identifier('__ll'), t.identifier('blockEnter')),
+                [t.stringLiteral('logic'), t.stringLiteral('Condition True')]
+              )
+            );
+            enterCall.loc = null as any;
+            
+            const exitCall = t.expressionStatement(
+              t.callExpression(
+                t.memberExpression(t.identifier('__ll'), t.identifier('blockExit')),
+                []
+              )
+            );
+            exitCall.loc = null as any;
+
+            path.node.consequent.body.unshift(enterCall);
+            path.node.consequent.body.push(exitCall);
+          }
+
+          if (path.node.alternate && t.isBlockStatement(path.node.alternate)) {
+            const enterCall = t.expressionStatement(
+              t.callExpression(
+                t.memberExpression(t.identifier('__ll'), t.identifier('blockEnter')),
+                [t.stringLiteral('logic'), t.stringLiteral('Condition False (Else)')]
+              )
+            );
+            enterCall.loc = null as any;
+            
+            const exitCall = t.expressionStatement(
+              t.callExpression(
+                t.memberExpression(t.identifier('__ll'), t.identifier('blockExit')),
+                []
+              )
+            );
+            exitCall.loc = null as any;
+
+            path.node.alternate.body.unshift(enterCall);
+            path.node.alternate.body.push(exitCall);
+          }
+        },
           
         NewExpression(path: any) {
           if (path.node.loc === null) return;

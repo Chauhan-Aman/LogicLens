@@ -92,6 +92,37 @@ def transpile(code):
                 closing_brace_offset = code_bytes.rfind(b'}', start_body_offset, end_body_offset)
                 if closing_brace_offset != -1:
                     replacements.append((closing_brace_offset, b'\n__ll_block_exit();\n'))
+        
+        if node.kind == CursorKind.IF_STMT:
+            children = list(node.get_children())
+            if len(children) >= 2:
+                # children[0] is the condition, children[1] is the body (COMPOUND_STMT)
+                body_node = children[1]
+                if body_node.kind == CursorKind.COMPOUND_STMT:
+                    start_body_offset = body_node.extent.start.offset
+                    brace_offset = code_bytes.find(b'{', start_body_offset)
+                    if brace_offset != -1:
+                        injection = '\n__ll_block_enter("logic", "Condition True");'
+                        replacements.append((brace_offset + 1, injection.encode('utf-8')))
+                    end_body_offset = body_node.extent.end.offset
+                    closing_brace_offset = code_bytes.rfind(b'}', start_body_offset, end_body_offset)
+                    if closing_brace_offset != -1:
+                        replacements.append((closing_brace_offset, b'\n__ll_block_exit();\n'))
+            
+            if len(children) >= 3:
+                # children[2] is the else block
+                else_node = children[2]
+                if else_node.kind == CursorKind.COMPOUND_STMT:
+                    start_else = else_node.extent.start.offset
+                    brace_offset = code_bytes.find(b'{', start_else)
+                    if brace_offset != -1:
+                        injection = '\n__ll_block_enter("logic", "Condition False (Else)");'
+                        replacements.append((brace_offset + 1, injection.encode('utf-8')))
+                    end_else = else_node.extent.end.offset
+                    closing_brace_offset = code_bytes.rfind(b'}', start_else, end_else)
+                    if closing_brace_offset != -1:
+                        replacements.append((closing_brace_offset, b'\n__ll_block_exit();\n'))
+
         next_parent = node.kind
         if node.kind == CursorKind.DECL_STMT and parent_kind == CursorKind.FOR_STMT:
             next_parent = CursorKind.FOR_STMT

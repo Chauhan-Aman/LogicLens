@@ -1,33 +1,44 @@
-// Brute Force Sorting C++ â€” O(n log n)
+
+#include "LogicLens.h"
+
+// --- INJECTED GLOBAL INPUTS ---
+
+std::vector<int> prices = {7, 1, 5, 3, 6, 4};
+
+
+struct __LL_Init {
+    __LL_Init() {
+        __ll_set_var("prices", prices);
+
+    }
+} __ll_init_instance;
+
+// ------------------------------
+
+// --- USER CODE ---
+// Sliding Window C++ â€” O(n)
 #include <iostream>
-#include <string>
+#include <vector>
 
 using namespace std;
 
 int main() {
-  if (s.length() != t.length()) {
-    cout << "Lengths differ, not an anagram" << endl;
-    return 0;
-  }
+  int minPrice = 2147483647;
+  int maxProfit = 0;
 
-  for (int i = 0; i < s.length(); i++) {
-    for (int j = i + 1; j < s.length(); j++) {
-      if (s[i] > s[j]) { char temp = s[i]; s[i] = s[j]; s[j] = temp; }
+  for (int i = 0; i < prices.size(); i++) {
+    int price = prices[i];
+    if (price < minPrice) {
+      minPrice = price;
+      cout << "New min price: " << minPrice << endl;
+    } else {
+      int profit = price - minPrice;
+      if (profit > maxProfit) {
+        maxProfit = profit;
+        cout << "New max profit: " << maxProfit << endl;
+      }
     }
   }
-  for (int i = 0; i < t.length(); i++) {
-    for (int j = i + 1; j < t.length(); j++) {
-      if (t[i] > t[j]) { char temp = t[i]; t[i] = t[j]; t[j] = temp; }
-    }
-  }
-
-  for (int i = 0; i < s.length(); i++) {
-    if (s[i] != t[i]) {
-      cout << "Mismatch found" << endl;
-      return 0;
-    }
-  }
-
-  cout << "Valid anagram!" << endl;
   return 0;
 }
+// -----------------

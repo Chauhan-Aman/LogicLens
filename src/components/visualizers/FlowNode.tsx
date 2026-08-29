@@ -83,7 +83,11 @@ export default function FlowNode({ nodeData, isActive, currentStep, onClick }: F
       iconColor = ev.result ? 'text-emerald-400' : 'text-red-400';
       lastComparison = baseSnap;
     } else if (ev.type === 'VARIABLE_UPDATE') {
-      title = `${ev.variable} = ${JSON.stringify(ev.value)}`;
+      if (varsSet.size > 0) {
+        title = Array.from(varsSet.entries()).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ');
+      } else {
+        title = `${ev.variable} = ${JSON.stringify(ev.value)}`;
+      }
       subtitle = 'Variable Assignment';
       Icon = Variable;
       borderColor = 'border-amber-500/30';
