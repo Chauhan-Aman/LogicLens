@@ -507,4 +507,26 @@ To add a new problem:
 
 ---
 
+## Phase 11 — Persistent User Data & DB Migration 🚧 Planned
+
+**Goal**: Move from browser Local Storage to a persistent backend database to support a growing problem collection and multi-device syncing.
+
+### Current Implementation (Completed)
+- Custom solutions can be written, named, and saved directly from the code editor.
+- Saved solutions are persisted in **Local Storage** via Zustand's `persist` middleware.
+- A custom UI overlay allows for seamless naming without jarring browser alerts.
+- Editor tabs intelligently merge default solutions with saved solutions, filtering by active language.
+
+### Future Architecture (Planned)
+- **Database**: MongoDB, PostgreSQL, or Supabase.
+- **Backend**: Next.js API Routes for CRUD operations on solutions.
+- **Authentication**: NextAuth for user accounts.
+- **Migration Strategy**: 
+  1. Define relational/document schemas for `Users`, `Problems`, and `Solutions`.
+  2. Swap out `zustand/persist` calls with API fetches.
+  3. Allow guest users to use local storage temporarily, syncing to the database upon account creation.
+- **Why?**: Local Storage is perfect for local dev or simple desktop usage, but a 100+ problem catalog requires real database infrastructure to guarantee data integrity, prevent data loss when browser caches are cleared, and enable multi-device access.
+
+---
+
 *Built with the philosophy: write real code, see real execution.*
