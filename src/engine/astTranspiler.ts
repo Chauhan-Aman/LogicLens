@@ -194,11 +194,19 @@ export function transpileCode(code: string): string {
         IfStatement(path: any) {
           if (path.node.loc === null) return;
           
+          let condText = "Condition True";
+          let elseText = "Condition False (Else)";
+          if (path.node.test && typeof path.node.test.start === 'number' && typeof path.node.test.end === 'number') {
+             const raw = code.substring(path.node.test.start, path.node.test.end).replace(/"/g, '\\"');
+             condText = raw;
+             elseText = `! (${raw}) (Else)`;
+          }
+
           if (t.isBlockStatement(path.node.consequent)) {
             const enterCall = t.expressionStatement(
               t.callExpression(
                 t.memberExpression(t.identifier('__ll'), t.identifier('blockEnter')),
-                [t.stringLiteral('logic'), t.stringLiteral('Condition True')]
+                [t.stringLiteral('logic'), t.stringLiteral(condText)]
               )
             );
             enterCall.loc = null as any;
@@ -219,7 +227,7 @@ export function transpileCode(code: string): string {
             const enterCall = t.expressionStatement(
               t.callExpression(
                 t.memberExpression(t.identifier('__ll'), t.identifier('blockEnter')),
-                [t.stringLiteral('logic'), t.stringLiteral('Condition False (Else)')]
+                [t.stringLiteral('logic'), t.stringLiteral(elseText)]
               )
             );
             enterCall.loc = null as any;

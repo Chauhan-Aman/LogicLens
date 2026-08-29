@@ -1,10 +1,8 @@
 
 int main() {
-    if (x > 0) {
+    if (x > 0 && y == "test") {
         x++;
     } else if (x < 0) {
         x--;
-    } else {
-        x = 0;
     }
 }

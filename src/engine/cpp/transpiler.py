@@ -94,6 +94,28 @@ def transpile(code):
                     replacements.append((closing_brace_offset, b'\n__ll_block_exit();\n'))
         
         if node.kind == CursorKind.IF_STMT:
+            # Extract condition text using tokens
+            tokens = list(node.get_tokens())
+            paren_count = 0
+            cond_tokens = []
+            started = False
+            for t in tokens:
+                if t.spelling == '(':
+                    if not started:
+                        started = True
+                        paren_count += 1
+                        continue
+                    paren_count += 1
+                elif t.spelling == ')':
+                    paren_count -= 1
+                    if started and paren_count == 0:
+                        break
+                
+                if started:
+                    cond_tokens.append(t.spelling)
+            
+            cond_text = " ".join(cond_tokens).replace('"', '\\"')
+            
             children = list(node.get_children())
             if len(children) >= 2:
                 # children[0] is the condition, children[1] is the body (COMPOUND_STMT)
@@ -102,7 +124,7 @@ def transpile(code):
                     start_body_offset = body_node.extent.start.offset
                     brace_offset = code_bytes.find(b'{', start_body_offset)
                     if brace_offset != -1:
-                        injection = '\n__ll_block_enter("logic", "Condition True");'
+                        injection = f'\n__ll_block_enter("logic", "{cond_text}");'
                         replacements.append((brace_offset + 1, injection.encode('utf-8')))
                     end_body_offset = body_node.extent.end.offset
                     closing_brace_offset = code_bytes.rfind(b'}', start_body_offset, end_body_offset)
@@ -116,7 +138,7 @@ def transpile(code):
                     start_else = else_node.extent.start.offset
                     brace_offset = code_bytes.find(b'{', start_else)
                     if brace_offset != -1:
-                        injection = '\n__ll_block_enter("logic", "Condition False (Else)");'
+                        injection = f'\n__ll_block_enter("logic", "! ({cond_text}) (Else)");'
                         replacements.append((brace_offset + 1, injection.encode('utf-8')))
                     end_else = else_node.extent.end.offset
                     closing_brace_offset = code_bytes.rfind(b'}', start_else, end_else)
