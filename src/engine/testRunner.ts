@@ -74,14 +74,30 @@ export async function runAllTests(
 
       // Check if passed
       const exactOrder = tc.exactOrder ?? true;
-      const passed = compareResults(res.returnValue, tc.expected, exactOrder);
+      let actualValue = res.returnValue;
+      
+      // C++ doesn't return a value to JS context natively, so we parse its last standard output
+      if (language === 'cpp' && actualValue === undefined) {
+        const lastOutput = [...res.events].reverse().find(e => e.type === 'ANNOTATION' && (e as any).payload && (e as any).payload.message);
+        if (lastOutput) {
+          const msg = (lastOutput as any).payload.message.trim();
+          if (msg === 'true') actualValue = true;
+          else if (msg === 'false') actualValue = false;
+          else {
+            try { actualValue = JSON.parse(msg); } 
+            catch { actualValue = msg; }
+          }
+        }
+      }
+
+      const passed = compareResults(actualValue, tc.expected, exactOrder);
 
       const timeline = buildTimeline(res.events);
 
       results.push({
         input: tc.input,
         expected: tc.expected,
-        actual: res.returnValue,
+        actual: actualValue,
         passed,
         events: res.events,
         timeline,

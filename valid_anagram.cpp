@@ -1,4 +1,4 @@
-// Brute Force Sorting C++ â€” O(n log n)
+// Brute Force Sorting C++ — O(n log n)
 #include <iostream>
 #include <string>
 

@@ -272,9 +272,10 @@ export async function executeCode(userCode: string, inputJson: string, language:
 
   try {
     // Build the sandbox function
-    // We inject __ll (our tracker API), __input (the raw input object), and destructure the proxied inputs directly into the scope.
-    const paramNames = ['__ll', '__input', ...Object.keys(proxiedInput)];
-    const paramValues = [llApi, input, ...Object.values(proxiedInput)];
+    // We inject __ll (our tracker API) and __input (the raw input object).
+    // The user's code uses `const s = __input.s;`, so we must not pass `s` as a parameter to avoid SyntaxError.
+    const paramNames = ['__ll', '__input'];
+    const paramValues = [llApi, proxiedInput];
 
     const sandboxFn = new Function(
       ...paramNames,
