@@ -3,12 +3,14 @@
 
 // --- INJECTED GLOBAL INPUTS ---
 
-std::vector<int> prices = {3, 2, 6, 5, 0, 3, 6, 5, 0};
+std::vector<int> nums = {2, 7, 11, 15};
+int target = 9;
 
 
 struct __LL_Init {
     __LL_Init() {
-        __ll_set_var("prices", prices);
+        __ll_set_var("nums", nums);
+        __ll_set_var("target", target);
 
     }
 } __ll_init_instance;
@@ -16,26 +18,19 @@ struct __LL_Init {
 // ------------------------------
 
 // --- USER CODE ---
-// Sliding Window C++ â€” O(n)
+// Brute Force C++ â€” O(nÂ²)
 #include <iostream>
 #include <vector>
 
 using namespace std;
 
 int main() {
-  int minPrice = 2147483647;
-  int maxProfit = 0;
-
-  for (int i = 0; i < prices.size(); i++) {
-    int price = prices[i];
-    if (price < minPrice) {
-      minPrice = price;
-      cout << "New min price: " << minPrice << endl;
-    } else {
-      int profit = price - minPrice;
-      if (profit > maxProfit) {
-        maxProfit = profit;
-        cout << "New max profit: " << maxProfit << endl;
+  for (int i = 0; i < nums.size(); i++) {
+    for (int j = i + 1; j < nums.size(); j++) {
+      int sum = nums[i] + nums[j];
+      if (sum == target) {
+        cout << "[" << i << ", " << j << "]" << endl;
+        return 0;
       }
     }
   }

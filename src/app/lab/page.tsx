@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, ChevronLeft, ChevronRight, Layers, BookOpen, Cpu, GitBranch } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, Layers, BookOpen, Cpu, GitBranch, X } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import CodeEditor from '@/components/lab/CodeEditor';
 import ProblemPanel from '@/components/lab/ProblemPanel';
@@ -10,16 +10,25 @@ import RightPanel from '@/components/lab/RightPanel';
 import ExecutionControls from '@/components/lab/ExecutionControls';
 import ProblemCard from '@/components/collection/ProblemCard';
 import { useLabStore, type Problem } from '@/store/labStore';
+import { useSavedSolutionsStore } from '@/store/savedSolutionsStore';
 import { PROBLEMS } from '@/data/index';
+import { useMemo } from 'react';
 
 const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
 
 export default function LabPage() {
-  const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, setActiveLanguage } = useLabStore();
+  const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, setActiveLanguage, activeSolution, setActiveSolution } = useLabStore();
+  const { savedSolutions, deleteSolution } = useSavedSolutionsStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
   const [diffFilter, setDiffFilter] = useState('All');
-  const [activeSolution, setActiveSolution] = useState(0);
+
+  const allSolutions = useMemo(() => {
+    if (!activeProblem) return [];
+    const defaultSols = activeProblem.solutions.map(s => ({ ...s, isSaved: false, id: `default-${s.name}` }));
+    const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id).map(s => ({ ...s, isSaved: true }));
+    return [...defaultSols, ...customSols];
+  }, [activeProblem, savedSolutions]);
 
   const filtered = PROBLEMS.filter(p => {
     const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -52,10 +61,10 @@ export default function LabPage() {
   }
 
   function selectSolution(idx: number) {
-    if (!activeProblem) return;
+    if (!allSolutions[idx]) return;
     setActiveSolution(idx);
-    setUserCode(activeProblem.solutions[idx]?.code ?? '');
-    setActiveLanguage(activeProblem.solutions[idx]?.language ?? 'javascript');
+    setUserCode(allSolutions[idx]?.code ?? '');
+    setActiveLanguage(allSolutions[idx]?.language ?? 'javascript');
     setTimeline([]);
     setExecutionError(null);
   }
@@ -185,20 +194,38 @@ export default function LabPage() {
           </div>
 
           {/* Solution selector */}
-          {activeProblem && activeProblem.solutions.length > 1 && (
+          {allSolutions.length > 0 && (
             <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5">
-              {activeProblem.solutions.map((sol, i) => (
-                <button
-                  key={i}
-                  onClick={() => selectSolution(i)}
-                  className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
-                    activeSolution === i
-                      ? 'bg-white text-black'
-                      : 'text-white/40 hover:text-white/70'
-                  }`}
-                >
-                  {sol.name}
-                </button>
+              {allSolutions.map((sol, i) => (
+                <div key={sol.id || i} className={`flex items-center rounded-md transition-all ${
+                  activeSolution === i
+                    ? 'bg-white text-black'
+                    : 'text-white/40 hover:text-white/70 hover:bg-white/5'
+                }`}>
+                  <button
+                    onClick={() => selectSolution(i)}
+                    className="text-xs px-3 py-1.5 font-medium flex-1 text-left"
+                  >
+                    {sol.name}
+                  </button>
+                  {sol.isSaved && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSolution(sol.id);
+                        if (activeSolution === i) {
+                          selectSolution(0);
+                        } else if (activeSolution > i) {
+                          setActiveSolution(activeSolution - 1);
+                        }
+                      }}
+                      className="px-2 py-1.5 text-black/50 hover:text-red-500 transition-colors"
+                      title="Delete saved solution"
+                    >
+                      <X size={12} className={activeSolution === i ? "text-black/50 hover:text-red-600" : "text-white/30 hover:text-red-400"} />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}

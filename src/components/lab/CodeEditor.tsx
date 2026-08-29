@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Play, RotateCcw, Cpu } from 'lucide-react';
+import { Play, RotateCcw, Cpu, Save } from 'lucide-react';
 import { useLabStore } from '@/store/labStore';
+import { useSavedSolutionsStore } from '@/store/savedSolutionsStore';
 import { executeCode } from '@/engine/executor';
 import { buildTimeline } from '@/engine/stateEngine';
 import { detectStructures } from '@/engine/detector';
@@ -45,7 +46,10 @@ export default function CodeEditor() {
     activeProblem,
     activeLanguage,
     setActiveLanguage,
+    setActiveSolution,
   } = useLabStore();
+  
+  const { saveSolution, savedSolutions } = useSavedSolutionsStore();
 
   const [isRunning, setIsRunning] = useState(false);
   const [isRunningAll, setIsRunningAll] = useState(false);
@@ -180,6 +184,31 @@ export default function CodeEditor() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (!activeProblem) return;
+              const name = prompt('Enter a name for this solution:');
+              if (name && name.trim()) {
+                saveSolution({
+                  problemId: activeProblem.id,
+                  name: name.trim(),
+                  language: activeLanguage,
+                  code: userCode,
+                });
+                // We set active solution to the newly saved one.
+                // Assuming it gets appended, its index will be the sum of default + previous custom + 1.
+                // A simpler way is to just let the user click it, or calculate the index:
+                const numDefaults = activeProblem.solutions.length;
+                const numCustom = savedSolutions.filter(s => s.problemId === activeProblem.id).length;
+                setActiveSolution(numDefaults + numCustom);
+              }
+            }}
+            disabled={!userCode.trim()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-all duration-150 disabled:opacity-50"
+          >
+            <Save size={12} />
+            Save
+          </button>
           <button
             onClick={() => setUserCode('')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/40 hover:text-white/70 hover:bg-white/5 rounded-lg transition-all duration-150"
