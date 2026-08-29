@@ -73,13 +73,16 @@ export default function ProblemPanel({ problem }: ProblemPanelProps) {
 
               {/* Examples */}
               <div className="space-y-2">
-                {problem.examples.map((ex, i) => (
-                  <div key={i} className="rounded-lg bg-white/5 ring-1 ring-white/10 p-3 space-y-1">
-                    <div className="text-xs font-mono text-white/30">Example {i + 1}</div>
-                    <div className="text-xs font-mono text-gray-300">Input: {ex.input}</div>
-                    <div className="text-xs font-mono text-white font-semibold">Output: {ex.output}</div>
-                  </div>
-                ))}
+                {problem.examples.map((ex, i) => {
+                  const formatValue = (val: any) => typeof val === 'object' ? JSON.stringify(val) : String(val);
+                  return (
+                    <div key={i} className="rounded-lg bg-white/5 ring-1 ring-white/10 p-3 space-y-1">
+                      <div className="text-xs font-mono text-white/30">Example {i + 1}</div>
+                      <div className="text-xs font-mono text-gray-300 break-all">Input: {formatValue(ex.input)}</div>
+                      <div className="text-xs font-mono text-white font-semibold break-all">Output: {formatValue(ex.output)}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </motion.div>
