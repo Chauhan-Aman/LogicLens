@@ -138,7 +138,7 @@ export default function CodeEditor() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-y-auto">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 bg-black/20">
         <div className="flex items-center gap-2">
@@ -204,7 +204,7 @@ export default function CodeEditor() {
       </div>
 
       {/* Editor */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-[10rem] shrink-0">
         <MonacoEditor
           height="100%"
           language={activeLanguage === 'cpp' ? 'cpp' : 'javascript'}
