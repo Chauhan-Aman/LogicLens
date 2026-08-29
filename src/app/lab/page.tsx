@@ -38,7 +38,15 @@ export default function LabPage() {
     setActiveSolution(defaultSolIdx);
     setUserCode(problem.solutions[defaultSolIdx]?.code ?? '');
     setActiveLanguage(problem.solutions[defaultSolIdx]?.language ?? 'javascript');
-    setInputJson(problem.defaultInput);
+    if (problem.testCases && problem.testCases.length > 0) {
+      setInputJson(JSON.stringify(problem.testCases[0].input, null, 2));
+    } else {
+      try {
+        setInputJson(JSON.stringify(JSON.parse(problem.defaultInput), null, 2));
+      } catch {
+        setInputJson(problem.defaultInput);
+      }
+    }
     setTimeline([]);
     setExecutionError(null);
   }

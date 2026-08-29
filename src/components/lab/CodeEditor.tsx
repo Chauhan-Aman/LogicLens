@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Play, RotateCcw, Cpu } from 'lucide-react';
 import { useLabStore } from '@/store/labStore';
@@ -113,6 +113,17 @@ export default function CodeEditor() {
       setIsRunningAll(false);
     }
   }, [userCode, activeProblem, activeLanguage, setTimeline, setDetection, setExecutionError, setInputJson]);
+
+  useEffect(() => {
+    // When problem or language changes, we reset things
+    if (activeProblem) {
+      if (activeProblem.testCases && activeProblem.testCases.length > 0) {
+        setActiveTab(0);
+      } else {
+        setActiveTab(null);
+      }
+    }
+  }, [activeProblem]);
 
   function handleEditorMount(editor: unknown, monaco: unknown) {
     // Register custom dark theme
