@@ -77,7 +77,7 @@ export default function ConceptualVisualizer() {
             <p className="text-sm text-white/60">{concept.optimalConcept}</p>
             
             {concept.graphic && concept.graphic.length > 0 && (
-               <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50 whitespace-pre">
+               <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50 whitespace-pre overflow-x-auto">
                  {concept.graphic.map((line, i) => (
                    <div key={i}>{line}</div>
                  ))}
