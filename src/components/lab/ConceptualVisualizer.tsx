@@ -1,30 +1,32 @@
 'use client';
 
 import { useLabStore } from '@/store/labStore';
+import { useAIStore } from '@/store/aiStore';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { askTutor, generateConceptualView } from '@/engine/llmClient';
-import { Sparkles, Send, Loader2 } from 'lucide-react';
+import { Sparkles, Send, Loader2, Trash2 } from 'lucide-react';
 
 export default function ConceptualVisualizer() {
   const { activeProblem, userCode } = useLabStore();
+  const { concepts, chatHistories, saveConcept, addChatMessage, clearChatHistory } = useAIStore();
   
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedConcept, setGeneratedConcept] = useState<{ problemConcept: string, optimalConcept: string, graphic?: string[] } | null>(null);
-  
   const [chatInput, setChatInput] = useState('');
-  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'tutor', content: string }[]>([]);
   const [isChatting, setIsChatting] = useState(false);
 
   if (!activeProblem) {
     return null;
   }
 
+  const generatedConcept = concepts[activeProblem.id];
+  const chatHistory = chatHistories[activeProblem.id] || [];
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
       const res = await generateConceptualView(activeProblem.title, activeProblem.description);
-      setGeneratedConcept(res);
+      saveConcept(activeProblem.id, res);
     } catch (err) {
       console.error(err);
       alert('Failed to generate conceptual view using Ollama. Ensure Ollama is running.');
@@ -37,15 +39,16 @@ export default function ConceptualVisualizer() {
     if (!chatInput.trim()) return;
     const question = chatInput.trim();
     setChatInput('');
-    setChatHistory(prev => [...prev, { role: 'user', content: question }]);
+    
+    addChatMessage(activeProblem.id, { role: 'user', content: question });
     
     setIsChatting(true);
     try {
       const res = await askTutor(activeProblem.title, activeProblem.description, userCode, question);
-      setChatHistory(prev => [...prev, { role: 'tutor', content: res }]);
+      addChatMessage(activeProblem.id, { role: 'tutor', content: res });
     } catch (err) {
       console.error(err);
-      setChatHistory(prev => [...prev, { role: 'tutor', content: 'Sorry, I failed to connect to Ollama.' }]);
+      addChatMessage(activeProblem.id, { role: 'tutor', content: 'Sorry, I failed to connect to Ollama.' });
     } finally {
       setIsChatting(false);
     }

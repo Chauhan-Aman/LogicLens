@@ -24,7 +24,7 @@ Please provide a concise, helpful, and educational response. Do not give away th
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama3', // Assumes llama3 is installed, can fallback to others
+        model: 'llama3.2', // Assumes llama3.2 is installed, can fallback to others
         prompt: prompt,
         stream: false,
       }),
@@ -41,19 +41,16 @@ Please provide a concise, helpful, and educational response. Do not give away th
   }
 }
 
-export async function generateConceptualView(problemTitle: string, problemDescription: string): Promise<{ problemConcept: string, optimalConcept: string, graphic: string[] }> {
+export async function generateConceptualView(problemTitle: string, problemDescription: string): Promise<{ problemConcept: string, optimalConcept: string, graphic?: string[] }> {
   const prompt = `You are an expert algorithm explainer. Generate a conceptual breakdown for the problem: "${problemTitle}".
 Description: ${problemDescription}
 
 Output ONLY valid JSON matching this schema exactly, with NO markdown formatting, NO backticks, and NO extra text:
 {
   "problemConcept": "A 1-2 sentence simple explanation of the core problem.",
-  "optimalConcept": "A 2-3 sentence explanation of the optimal approach (e.g. HashMap, Two Pointers).",
-  "graphic": [
-    "Line 1 of a simple ASCII graphic or trace",
-    "Line 2 of the graphic"
-  ]
-}`;
+  "optimalConcept": "A 2-3 sentence explanation of the optimal approach (e.g. HashMap, Two Pointers)."
+}
+Do NOT generate ASCII art or diagrams.`;
 
   try {
     const res = await fetch('http://localhost:11434/api/generate', {
@@ -62,7 +59,7 @@ Output ONLY valid JSON matching this schema exactly, with NO markdown formatting
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama3',
+        model: 'llama3.2',
         prompt: prompt,
         stream: false,
         format: 'json', // Force JSON mode
