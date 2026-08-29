@@ -48,9 +48,12 @@ Description: ${problemDescription}
 Output ONLY valid JSON matching this schema exactly, with NO markdown formatting, NO backticks, and NO extra text:
 {
   "problemConcept": "A 1-2 sentence simple explanation of the core problem.",
-  "optimalConcept": "A 2-3 sentence explanation of the optimal approach (e.g. HashMap, Two Pointers)."
+  "optimalConcept": "A 2-3 sentence explanation of the optimal approach (e.g. HashMap, Two Pointers).",
+  "graphic": [
+    "A simple text trace or data state. Do NOT draw ASCII boxes like +---+. Use simple array syntax [1, 2, 3] and carets ^ to point to elements if needed."
+  ]
 }
-Do NOT generate ASCII art or diagrams.`;
+Ensure the graphic array contains clean, readable lines of text simulating an execution trace.`;
 
   try {
     const res = await fetch('http://localhost:11434/api/generate', {
