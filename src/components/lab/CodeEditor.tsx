@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Play, RotateCcw, Cpu, Save, X } from 'lucide-react';
+import { Play, RotateCcw, Cpu, Save, X, AlignLeft } from 'lucide-react';
 import { useLabStore } from '@/store/labStore';
 import { useSavedSolutionsStore } from '@/store/savedSolutionsStore';
 import { useCustomProblemsStore } from '@/store/customProblemsStore';
@@ -64,6 +64,7 @@ export default function CodeEditor() {
   
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveName, setSaveName] = useState('');
+  const editorRef = useRef<any>(null);
 
   // Helper: mutate test cases on the active problem and persist
   function applyTestCaseChange(newTestCases: NonNullable<typeof activeProblem>['testCases']) {
@@ -153,6 +154,7 @@ export default function CodeEditor() {
   }, [activeProblem]);
 
   function handleEditorMount(editor: unknown, monaco: unknown) {
+    editorRef.current = editor;
     // Register custom dark theme
     (monaco as { editor: { defineTheme: (name: string, opts: unknown) => void } }).editor.defineTheme('logiclens-dark', {
       base: 'vs-dark',
@@ -274,6 +276,14 @@ export default function CodeEditor() {
           >
             <Save size={12} />
             Save
+          </button>
+          <button
+            onClick={() => editorRef.current?.getAction('editor.action.formatDocument')?.run()}
+            disabled={!userCode.trim()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/40 hover:text-white/70 hover:bg-white/5 rounded-lg transition-all duration-150 disabled:opacity-50"
+          >
+            <AlignLeft size={12} />
+            Format
           </button>
           <button
             onClick={() => setUserCode('')}
