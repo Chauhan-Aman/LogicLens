@@ -26,7 +26,7 @@ public:
     bool isIsomorphic(string s, string t) {
         int n = s.length(), m = t.length(); 
         if(m != n) return false;
-        vector<int> map1(n, 0), map2(m, 0);
+        vector<int> map1(256, 0), map2(256, 0);
 
         int i = 0;
         while(i < m){

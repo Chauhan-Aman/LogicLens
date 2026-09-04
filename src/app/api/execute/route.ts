@@ -4,6 +4,25 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
+function sanitizeError(errorStr: string, tempDir: string): string {
+    let sanitized = errorStr;
+    // Strip exact temporary directory and workspace path if present
+    sanitized = sanitized.split(tempDir).join('');
+    sanitized = sanitized.split(process.cwd()).join('');
+    
+    // Use regex to replace any remaining absolute paths (C:\folder\file.cpp:) with just the filename (file.cpp:)
+    sanitized = sanitized.replace(/(?:[A-Za-z]:)?[\\/][a-zA-Z0-9_\-\.\s\\/]+[\\/]([a-zA-Z0-9_\-\.]+):/g, '$1:');
+    
+    // Map internal filenames to friendly names
+    sanitized = sanitized.replace(/transpiled\.cpp/g, 'solution.cpp');
+    sanitized = sanitized.replace(/LogicLens\.h/g, 'system_headers.h');
+    
+    // Clean up any stray slashes left behind
+    sanitized = sanitized.replace(/^[\\/]+/gm, '');
+    
+    return sanitized;
+}
+
 function generateCppInit(input: any): string {
   let cppDecls = '';
   let cppTrackers = '';
@@ -106,7 +125,7 @@ ${code}
     await new Promise((resolve) => compileProcess.on('close', resolve));
 
     if (compileError) {
-      return NextResponse.json({ error: 'Compilation Error: ' + compileError }, { status: 400 });
+      return NextResponse.json({ error: 'Compilation Error:\n\n' + sanitizeError(compileError, tempDir) }, { status: 400 });
     }
 
     // 3. Execute
@@ -132,7 +151,7 @@ ${code}
     fs.writeFileSync(path.join(tempDir, 'debug.log'), `Output:\n${execOutput}\nError:\n${execError}`);
 
     if (execError) {
-      return NextResponse.json({ error: execError }, { status: 400 });
+      return NextResponse.json({ error: sanitizeError(execError, tempDir) }, { status: 400 });
     }
 
     // Parse JSON lines from stdout
