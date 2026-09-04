@@ -15,7 +15,11 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
   const [description, setDescription] = useState('');
-  const [defaultCode, setDefaultCode] = useState('');
+  const [defaultCode, setDefaultCode] = useState<Record<string, string>>({
+    javascript: '',
+    cpp: ''
+  });
+  const [activeLang, setActiveLang] = useState<'javascript' | 'cpp'>('javascript');
   const [defaultInput, setDefaultInput] = useState('{}');
   const [testCasesJson, setTestCasesJson] = useState('[]');
   const [examples, setExamples] = useState<{ input: string, output: string }[]>([]);
@@ -35,7 +39,14 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
       const template = await generateProblemTemplate(title, description);
       setDescription(template.description || '');
       setDefaultInput(template.defaultInput || '{}');
-      setDefaultCode(template.code || '');
+      if (typeof template.code === 'string') {
+        setDefaultCode({ javascript: template.code, cpp: '' });
+      } else if (template.code) {
+        setDefaultCode({
+          javascript: template.code.javascript || '',
+          cpp: template.code.cpp || ''
+        });
+      }
       if (template.testCases) {
         setTestCasesJson(JSON.stringify(template.testCases, null, 2));
       }
@@ -76,10 +87,16 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
       testCases: parsedTestCases,
       solutions: [
         {
-          name: 'My Solution',
+          name: 'JavaScript Solution',
           language: 'javascript',
           complexity: { time: 'O(?)', space: 'O(?)' },
-          code: defaultCode,
+          code: defaultCode.javascript,
+        },
+        {
+          name: 'C++ Solution',
+          language: 'cpp',
+          complexity: { time: 'O(?)', space: 'O(?)' },
+          code: defaultCode.cpp,
         }
       ],
       structures: ['array'], // Basic default
@@ -176,11 +193,27 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-white/60 uppercase">Starter Code</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-white/60 uppercase">Starter Code</label>
+                <div className="flex bg-black/40 rounded border border-white/10 overflow-hidden">
+                  <button 
+                    onClick={() => setActiveLang('javascript')}
+                    className={`px-2 py-1 text-xs font-medium transition-colors ${activeLang === 'javascript' ? 'bg-violet-500/20 text-violet-300' : 'text-white/40 hover:text-white/60'}`}
+                  >
+                    JavaScript
+                  </button>
+                  <button 
+                    onClick={() => setActiveLang('cpp')}
+                    className={`px-2 py-1 text-xs font-medium transition-colors border-l border-white/10 ${activeLang === 'cpp' ? 'bg-violet-500/20 text-violet-300' : 'text-white/40 hover:text-white/60'}`}
+                  >
+                    C++
+                  </button>
+                </div>
+              </div>
               <textarea
-                value={defaultCode}
-                onChange={(e) => setDefaultCode(e.target.value)}
-                placeholder="function solution() {}"
+                value={defaultCode[activeLang]}
+                onChange={(e) => setDefaultCode(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                placeholder={activeLang === 'javascript' ? "function solution() {}" : "#include <iostream>\nusing namespace std;\n\nvoid solution() {}"}
                 className="w-full h-24 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white outline-none focus:border-violet-500/50 font-mono resize-none"
               />
             </div>
