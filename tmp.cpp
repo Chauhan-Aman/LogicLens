@@ -3,8 +3,8 @@
 
 // --- INJECTED GLOBAL INPUTS ---
 
-std::string s = "dosmzmb";
-std::string t = "zqfkchk";
+std::string s = "ydvupj";
+std::string t = "ahqzl";
 
 
 struct __LL_Init {
@@ -18,7 +18,27 @@ struct __LL_Init {
 // ------------------------------
 
 // --- USER CODE ---
-function isIsomorphic(s, t) {
-  return true;
-}
+#include <string>
+using namespace std;
+
+class Solution {
+public:
+    bool isIsomorphic(string s, string t) {
+        int n = s.length(), m = t.length(); 
+        if(m != n) return false;
+        vector<int> map1(n, 0), map2(m, 0);
+
+        int i = 0;
+        while(i < m){
+            if(map1[s[i]] != map2[t[i]]) return false;
+
+            map1[s[i]] = i + 1;
+            map1[t[i]] = i + 1;
+            i++;
+        }
+
+        return false;
+    }
+};
+
 // -----------------

@@ -233,7 +233,22 @@ export default function CodeEditor() {
       });
       monacoInstance.languages.register({ id: 'cpp_formatted' }); // Dummy to mark as registered
     }
+
+    (editor as any).addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS, () => {
+      if (saveCommandRef.current) {
+        saveCommandRef.current();
+      }
+    });
   }
+
+  const saveCommandRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    saveCommandRef.current = () => {
+      if (userCode.trim()) {
+        setShowSaveModal(true);
+      }
+    };
+  }, [userCode]);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
