@@ -7,10 +7,32 @@ def transpile(code):
     
     # Write to tmp.cpp safely
     import os
+    import subprocess
+
+    def get_cpp_include_paths():
+        try:
+            result = subprocess.run(['g++', '-E', '-x', 'c++', '-', '-v'], input=b'', capture_output=True, text=True)
+            paths = []
+            in_include_section = False
+            for line in result.stderr.split('\n'):
+                if line.startswith('#include <...> search starts here:'):
+                    in_include_section = True
+                    continue
+                if line.startswith('End of search list.'):
+                    break
+                if in_include_section:
+                    paths.append('-I' + line.strip())
+            return paths
+        except Exception:
+            return []
+
     with open('tmp.cpp', 'wb') as f:
         f.write(code.encode('utf-8'))
         
-    tu = idx.parse('tmp.cpp', args=['-std=c++17'])
+    # We must pass the include path so clang can find LogicLens.h
+    # Also pass standard library paths so it can resolve <vector>, <string>, etc.
+    clang_args = ['-std=c++17', '-Isrc/engine/cpp'] + get_cpp_include_paths()
+    tu = idx.parse('tmp.cpp', args=clang_args)
     
     code_bytes = code.encode('utf-8')
     replacements = []
