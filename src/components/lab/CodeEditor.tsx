@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Play, RotateCcw, Cpu, Save } from 'lucide-react';
+import { Play, RotateCcw, Cpu, Save, X } from 'lucide-react';
 import { useLabStore } from '@/store/labStore';
 import { useSavedSolutionsStore } from '@/store/savedSolutionsStore';
 import { useCustomProblemsStore } from '@/store/customProblemsStore';
+import { useTestOverridesStore } from '@/store/testOverridesStore';
 import { executeCode } from '@/engine/executor';
 import { buildTimeline } from '@/engine/stateEngine';
 import { detectStructures } from '@/engine/detector';
@@ -54,13 +55,28 @@ export default function CodeEditor() {
   
   const { saveSolution, savedSolutions } = useSavedSolutionsStore();
   const { updateProblem } = useCustomProblemsStore();
+  const { setOverride } = useTestOverridesStore();
 
   const [isRunning, setIsRunning] = useState(false);
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [activeTab, setActiveTab] = useState<number | null>(null);
+  const [expectedJson, setExpectedJson] = useState('');
   
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveName, setSaveName] = useState('');
+
+  // Helper: mutate test cases on the active problem and persist
+  function applyTestCaseChange(newTestCases: NonNullable<typeof activeProblem>['testCases']) {
+    if (!activeProblem) return;
+    const updatedProblem = { ...activeProblem, testCases: newTestCases };
+    setActiveProblem(updatedProblem);
+    if (activeProblem.tags.includes('Custom')) {
+      updateProblem(updatedProblem);
+    } else {
+      // Persist overrides for built-in problems
+      setOverride(activeProblem.id, newTestCases ?? []);
+    }
+  }
 
   const run = useCallback(async () => {
     if (!userCode.trim()) return;
@@ -312,17 +328,42 @@ export default function CodeEditor() {
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs font-mono text-white/30 uppercase tracking-widest mr-2">Input</span>
             {activeProblem?.testCases?.map((tc, idx) => {
+              const isActive = activeTab === idx;
               return (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setActiveTab(idx);
-                    setInputJson(formatJsonInput(tc.input));
-                  }}
-                  className={`text-[10px] px-3 py-1 rounded transition-colors ${activeTab === idx ? 'bg-white/20 text-white' : 'bg-white/5 text-white/50 hover:bg-white/10'}`}
-                >
-                  Test {idx + 1}
-                </button>
+                <div key={idx} className={`flex items-center gap-0 rounded text-[10px] transition-colors ${isActive ? 'bg-white/20' : 'bg-white/5 hover:bg-white/10'}`}>
+                  <button
+                    onClick={() => {
+                      setActiveTab(idx);
+                      setInputJson(formatJsonInput(tc.input));
+                      setExpectedJson(tc.expected !== null && tc.expected !== undefined ? JSON.stringify(tc.expected) : '');
+                    }}
+                    className={`px-3 py-1 ${isActive ? 'text-white' : 'text-white/50'}`}
+                  >
+                    Test {idx + 1}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newCases = (activeProblem.testCases ?? []).filter((_, i) => i !== idx);
+                      applyTestCaseChange(newCases);
+                      if (activeTab === idx) {
+                        setActiveTab(null);
+                        if (newCases.length > 0) {
+                          const nextIdx = Math.min(idx, newCases.length - 1);
+                          setActiveTab(nextIdx);
+                          setInputJson(formatJsonInput(newCases[nextIdx].input));
+                          setExpectedJson(newCases[nextIdx].expected !== null ? JSON.stringify(newCases[nextIdx].expected) : '');
+                        }
+                      } else if (activeTab !== null && activeTab > idx) {
+                        setActiveTab(activeTab - 1);
+                      }
+                    }}
+                    title="Delete this test case"
+                    className={`pr-2 pl-0.5 py-1 text-white/20 hover:text-red-400 transition-colors ${isActive ? 'text-white/40' : ''}`}
+                  >
+                    <X size={9} />
+                  </button>
+                </div>
               );
             })}
 
@@ -333,12 +374,11 @@ export default function CodeEditor() {
                   try {
                     const currentInput = JSON.parse(inputJson);
                     const newTestCase = { input: currentInput, expected: null };
-                    const updatedProblem = { ...activeProblem, testCases: [...(activeProblem.testCases || []), newTestCase] };
-                    setActiveProblem(updatedProblem);
-                    if (updatedProblem.tags.includes('Custom')) {
-                      updateProblem(updatedProblem);
-                    }
-                    setActiveTab((activeProblem.testCases?.length || 0));
+                    const newCases = [...(activeProblem.testCases || []), newTestCase];
+                    applyTestCaseChange(newCases);
+                    const newIdx = newCases.length - 1;
+                    setActiveTab(newIdx);
+                    setExpectedJson('');
                   } catch (e) {
                     alert('Invalid JSON! Please format the input as valid JSON before saving as a test case.');
                   }
@@ -378,9 +418,42 @@ export default function CodeEditor() {
             setActiveTab(null);
           }}
           placeholder='{ "nums": [2, 7, 11, 15], "target": 9 }'
-          rows={10}
-          className="w-full px-4 pb-3 bg-transparent font-mono text-xs text-white/60 placeholder-white/20 resize-y min-h-[10rem] focus:outline-none"
+          rows={activeTab !== null ? 5 : 10}
+          className="w-full px-4 pb-3 bg-transparent font-mono text-xs text-white/60 placeholder-white/20 resize-y min-h-[5rem] focus:outline-none"
         />
+
+        {/* Expected output editor — shown when a test tab is selected */}
+        {activeTab !== null && (
+          <div className="border-t border-white/5 px-4 py-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Expected Output</span>
+              <button
+                onClick={() => {
+                  if (!activeProblem?.testCases) return;
+                  try {
+                    const parsedExpected = expectedJson.trim() === '' ? null : JSON.parse(expectedJson);
+                    const newCases = activeProblem.testCases.map((tc, i) =>
+                      i === activeTab ? { ...tc, expected: parsedExpected } : tc
+                    );
+                    applyTestCaseChange(newCases);
+                  } catch {
+                    alert('Invalid JSON for expected output.');
+                  }
+                }}
+                className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 transition-colors"
+              >
+                Save Expected
+              </button>
+            </div>
+            <textarea
+              value={expectedJson}
+              onChange={(e) => setExpectedJson(e.target.value)}
+              placeholder="e.g. 2  or  [0, 1]  or  true"
+              rows={3}
+              className="w-full bg-transparent font-mono text-xs text-white/60 placeholder-white/20 resize-y min-h-[3rem] focus:outline-none"
+            />
+          </div>
+        )}
       </div>
 
       {/* Test Results */}

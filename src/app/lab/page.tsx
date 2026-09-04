@@ -12,6 +12,7 @@ import ProblemCard from '@/components/collection/ProblemCard';
 import { useLabStore, type Problem } from '@/store/labStore';
 import { useSavedSolutionsStore } from '@/store/savedSolutionsStore';
 import { useCustomProblemsStore } from '@/store/customProblemsStore';
+import { useTestOverridesStore } from '@/store/testOverridesStore';
 import { v4 as uuidv4 } from 'uuid';
 import AddProblemModal from '@/components/lab/AddProblemModal';
 import { PROBLEMS } from '@/data/index';
@@ -24,6 +25,7 @@ export default function LabPage() {
   const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, activeLanguage, setActiveLanguage, activeSolution, setActiveSolution } = useLabStore();
   const { savedSolutions, deleteSolution } = useSavedSolutionsStore();
   const { customProblems, addProblem, deleteProblem } = useCustomProblemsStore();
+  const { getOverride } = useTestOverridesStore();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,22 +51,26 @@ export default function LabPage() {
 
 
   function selectProblem(problem: Problem) {
-    setActiveProblem(problem);
+    // For built-in problems, merge any persisted test case overrides
+    const override = !problem.tags.includes('Custom') ? getOverride(problem.id) : null;
+    const effectiveProblem = override ? { ...problem, testCases: override } : problem;
+
+    setActiveProblem(effectiveProblem);
     
     // Default to C++ solution if available
-    let defaultSolIdx = problem.solutions.findIndex(s => s.language === 'cpp');
+    let defaultSolIdx = effectiveProblem.solutions.findIndex(s => s.language === 'cpp');
     if (defaultSolIdx === -1) defaultSolIdx = 0;
     
     setActiveSolution(defaultSolIdx);
-    setUserCode(problem.solutions[defaultSolIdx]?.code ?? '');
-    setActiveLanguage(problem.solutions[defaultSolIdx]?.language ?? 'javascript');
-    if (problem.testCases && problem.testCases.length > 0) {
-      setInputJson(formatJsonInput(problem.testCases[0].input));
+    setUserCode(effectiveProblem.solutions[defaultSolIdx]?.code ?? '');
+    setActiveLanguage(effectiveProblem.solutions[defaultSolIdx]?.language ?? 'javascript');
+    if (effectiveProblem.testCases && effectiveProblem.testCases.length > 0) {
+      setInputJson(formatJsonInput(effectiveProblem.testCases[0].input));
     } else {
       try {
-        setInputJson(formatJsonInput(JSON.parse(problem.defaultInput)));
+        setInputJson(formatJsonInput(JSON.parse(effectiveProblem.defaultInput)));
       } catch (e) {
-        setInputJson(problem.defaultInput);
+        setInputJson(effectiveProblem.defaultInput);
       }
     }
     setTimeline([]);
