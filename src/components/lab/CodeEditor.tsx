@@ -186,14 +186,15 @@ export default function CodeEditor() {
       monacoInstance.languages.registerDocumentFormattingEditProvider('cpp', {
         provideDocumentFormattingEdits(model: any) {
           const code = model.getValue();
-          let s = code;
+          let s = code.replace(/\r\n/g, '\n'); // Normalize windows line endings
+          
           // Add newline after { if there isn't one
           s = s.replace(/\{[ \t]*([^\n}])/g, '{\n$1');
           // Add newline before } if there isn't one
           s = s.replace(/([^\n{])[ \t]*\}/g, '$1\n}');
           
           // Condense 3+ newlines into 2 newlines (1 empty line)
-          s = s.replace(/\n[ \t]*\n[ \t]*\n/g, '\n\n');
+          s = s.replace(/\n[ \t]*\n([ \t]*\n)+/g, '\n\n');
 
           let indent = 0;
           const lines = s.split('\n');
