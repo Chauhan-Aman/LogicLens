@@ -37,6 +37,9 @@ Please provide a concise, helpful, and educational response. Do not give away th
     const data = await res.json();
     return data.response;
   } catch (err: any) {
+    if (err.message.includes('Failed to fetch')) {
+      throw new Error('Could not connect to local AI. Is Ollama running on port 11434?');
+    }
     throw new Error(err.message || 'Error connecting to Local LLM');
   }
 }
@@ -75,6 +78,9 @@ Provide a concise, conversational code review. Point out the specific flaw, bug,
     const data = await res.json();
     return data.response;
   } catch (err: any) {
+    if (err.message.includes('Failed to fetch')) {
+      throw new Error('Could not connect to local AI. Is Ollama running on port 11434?');
+    }
     throw new Error(err.message || 'Error connecting to Local LLM');
   }
 }
