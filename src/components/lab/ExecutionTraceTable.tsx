@@ -3,7 +3,7 @@
 import { useLabStore } from '@/store/labStore';
 import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
-import { formatValue } from './visualizers/VariableChips';
+import { formatValue } from '../visualizers/VariableChips';
 
 export default function ExecutionTraceTable() {
   const { timeline, currentStep, setCurrentStep } = useLabStore();

@@ -25,6 +25,14 @@ def transpile(code):
             return paths
         except Exception:
             return []
+    def get_compiler_target():
+        try:
+            result = subprocess.run(['g++', '-dumpmachine'], capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except Exception:
+            pass
+        return None
 
     with open('tmp.cpp', 'wb') as f:
         f.write(code.encode('utf-8'))
@@ -32,6 +40,10 @@ def transpile(code):
     # We must pass the include path so clang can find LogicLens.h
     # Also pass standard library paths so it can resolve <vector>, <string>, etc.
     clang_args = ['-std=c++17', '-Isrc/engine/cpp'] + get_cpp_include_paths()
+    target = get_compiler_target()
+    if target:
+        clang_args.append('--target=' + target)
+        
     tu = idx.parse('tmp.cpp', args=clang_args)
     
     code_bytes = code.encode('utf-8')
