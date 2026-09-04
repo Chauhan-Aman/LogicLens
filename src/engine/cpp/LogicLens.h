@@ -24,12 +24,29 @@ inline std::string __ll_escape(const std::string& str) {
     return result;
 }
 
-// Convert various types to JSON string representation
+#include <type_traits>
+
+// SFINAE check for operator<<
+template <typename T, typename = void>
+struct has_ostream_operator : std::false_type {};
+
 template <typename T>
-inline std::string __ll_to_json(const T& val) {
+struct has_ostream_operator<T, std::void_t<decltype(std::declval<std::ostream&>() << std::declval<T>())>> : std::true_type {};
+
+// Convert various types to JSON string representation (for types WITH operator<<)
+template <typename T>
+inline typename std::enable_if<has_ostream_operator<T>::value, std::string>::type 
+__ll_to_json(const T& val) {
     std::stringstream ss;
     ss << val;
     return ss.str();
+}
+
+// Fallback for types WITHOUT operator<< (e.g., custom structs/classes)
+template <typename T>
+inline typename std::enable_if<!has_ostream_operator<T>::value, std::string>::type 
+__ll_to_json(const T& val) {
+    return "\"[Object]\"";
 }
 
 template <>
