@@ -132,7 +132,7 @@ export default function SmartArrayCanvas({
         </div>
       ) : (
         /* Cell block mode */
-        <div className="relative flex flex-wrap gap-1.5 mt-8">
+        <div className="relative flex flex-wrap gap-1.5 mt-8 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
           <AnimatePresence>
             {values.map((val, idx) => {
               const cellPtrs = pointerMap[idx] ?? [];
