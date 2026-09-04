@@ -142,8 +142,8 @@ Output ONLY valid JSON matching this schema exactly, with NO markdown formatting
   ],
   "defaultInput": "A JSON string representing the default variables for the execution environment, e.g. '{ \\"nums\\": [1, 2, 3] }'",
   "code": {
-    "javascript": "JUST the boilerplate function signature with an empty body and default return. DO NOT write the actual solution logic.",
-    "cpp": "JUST the boilerplate function signature in C++ with an empty body and default return. Include necessary headers like <vector>, <string>, etc. DO NOT write the actual solution logic."
+    "javascript": "JUST the boilerplate function signature with an empty body and default return. Format it with proper newlines and indentation. DO NOT write the actual solution logic.",
+    "cpp": "JUST the boilerplate function signature in C++ with an empty body and default return. Format it properly with newlines and indentation. Include necessary headers like <vector>, <string>, etc. DO NOT write the actual solution logic."
   },
   "structures": ["array"],
   "testCases": [
