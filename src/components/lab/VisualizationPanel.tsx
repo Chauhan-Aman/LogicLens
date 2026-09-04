@@ -248,16 +248,21 @@ export default function VisualizationPanel() {
         {hasVars && (
           <Section title="Variables" color="cyan">
             <div className="flex flex-col gap-4">
-              {pastIters.map((pi, idx) => (
-                <div key={idx} className="flex flex-col gap-2 pb-3 border-b border-white/5 opacity-50 hover:opacity-100 transition-opacity">
-                   <div className="text-[10px] text-cyan-500/50 uppercase tracking-widest font-mono">Iteration {pi.iter}</div>
-                   <VariableChips
-                     variables={pi.variables}
-                     changedVariable={undefined}
-                     pointerNames={pointerNames}
-                   />
-                </div>
-              ))}
+              {pastIters.map((pi, idx) => {
+                const filteredVars = Object.fromEntries(
+                  Object.entries(pi.variables).filter(([_, v]) => typeof v !== 'string' || v.length <= 1)
+                );
+                return (
+                  <div key={idx} className="flex flex-col gap-2 pb-3 border-b border-white/5 opacity-50 hover:opacity-100 transition-opacity">
+                     <div className="text-[10px] text-cyan-500/50 uppercase tracking-widest font-mono">Iteration {pi.iter}</div>
+                     <VariableChips
+                       variables={filteredVars}
+                       changedVariable={undefined}
+                       pointerNames={pointerNames}
+                     />
+                  </div>
+                );
+              })}
               <div className="flex flex-col gap-2">
                  {pastIters.length > 0 && <div className="text-[10px] text-cyan-400 uppercase tracking-widest font-mono">Current</div>}
                  <VariableChips
