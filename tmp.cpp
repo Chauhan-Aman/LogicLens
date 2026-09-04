@@ -42,7 +42,7 @@ int main() {
   }
 
   for (int i = 0; i < s.length(); i++) {
-    if (s[i] == t[i]) {
+    if (s[i] != t[i]) {
       cout << "false" << endl;
       return 0;
     }

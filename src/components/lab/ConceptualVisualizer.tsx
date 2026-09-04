@@ -131,7 +131,7 @@ export default function ConceptualVisualizer() {
             {concept.graphic && concept.graphic.length > 0 && (
                <>
                  <div className="relative group">
-                   <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50 whitespace-pre overflow-x-auto">
+                   <div className="bg-white/5 p-4 rounded-lg mt-4 font-mono text-xs text-white/50 whitespace-pre-wrap overflow-x-hidden break-words">
                      {concept.graphic.map((line, i) => (
                        <div key={i}>{line}</div>
                      ))}

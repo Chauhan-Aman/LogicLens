@@ -110,13 +110,26 @@ export default function VisualizationPanel() {
     displayVariables['ITERATION'] = iterDisplay;
   }
 
+  // Convert strings to pseudo-arrays for visualization
+  const stringArrays: Record<string, any> = {};
+  for (const [k, v] of Object.entries(displayVariables)) {
+    if (typeof v === 'string' && v.length > 1) {
+      stringArrays[k] = {
+        values: Array.from(v),
+        highlights: [],
+      };
+      delete displayVariables[k];
+    }
+  }
+
   const hasVars = Object.keys(displayVariables).length > 0;
 
   const pointerNames = Object.entries(snap.variables)
     .filter(([_, v]) => typeof v === 'number')
     .map(([k, _]) => k);
 
-  const arrayNames = Object.keys(snap.arrays);
+  const combinedArrays = { ...snap.arrays, ...stringArrays };
+  const arrayNames = Object.keys(combinedArrays);
 
   // Build per-array pointer map from variables
   const pointers: Record<string, number> = {};
@@ -153,7 +166,7 @@ export default function VisualizationPanel() {
 
   // Detect if this looks like a sorting scenario (for bar chart mode)
   const isSortLike = arrayNames.some(n =>
-    snap.arrays[n].swapIndices !== undefined || (snap.event.type === 'ARRAY_SWAP')
+    combinedArrays[n].swapIndices !== undefined || (snap.event.type === 'ARRAY_SWAP')
   );
 
   const bannerStyle = annotationStyle(snap.event.type);
@@ -206,7 +219,7 @@ export default function VisualizationPanel() {
         {hasArrays && (
           <Section title="Arrays" color="violet">
             <div className="space-y-6">
-              {Object.entries(snap.arrays).map(([name, state]) => {
+              {Object.entries(combinedArrays).map(([name, state]) => {
                 const is2D = state.values.length > 0 && Array.isArray(state.values[0]);
                 
                 return is2D ? (
