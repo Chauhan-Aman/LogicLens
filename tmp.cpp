@@ -3,8 +3,8 @@
 
 // --- INJECTED GLOBAL INPUTS ---
 
-std::string s = "a";
-std::string t = "a";
+std::string s = "anagram";
+std::string t = "nagaram";
 
 
 struct __LL_Init {

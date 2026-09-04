@@ -16,22 +16,33 @@ def transpile(code):
     replacements = []
     
 
+    def get_base_var(node):
+        if node.kind == CursorKind.DECL_REF_EXPR:
+            return node.spelling
+        if node.kind in [CursorKind.ARRAY_SUBSCRIPT_EXPR, CursorKind.CXX_OPERATOR_CALL_EXPR, CursorKind.MEMBER_REF_EXPR, CursorKind.UNEXPOSED_EXPR]:
+            children = list(node.get_children())
+            if children:
+                return get_base_var(children[0])
+        return None
+
     def get_modified_var(n):
-        if n.kind == CursorKind.BINARY_OPERATOR:
+        if n.kind == CursorKind.BINARY_OPERATOR or n.kind == CursorKind.CXX_OPERATOR_CALL_EXPR:
             children = list(n.get_children())
-            if len(children) >= 2 and children[0].kind == CursorKind.DECL_REF_EXPR:
-                lhs_tokens = list(children[0].get_tokens())
-                node_tokens = list(n.get_tokens())
-                if len(lhs_tokens) < len(node_tokens):
-                    op_token = node_tokens[len(lhs_tokens)].spelling
-                    if op_token in ['=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=']:
-                        return children[0].spelling
+            if len(children) >= 2:
+                base_var = get_base_var(children[0])
+                if base_var:
+                    # Very simple heuristic: if it's an assignment operator or overloaded assignment
+                    node_tokens = list(n.get_tokens())
+                    if any(t.spelling in ['=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|='] for t in node_tokens):
+                        return base_var
         elif n.kind == CursorKind.UNARY_OPERATOR:
             children = list(n.get_children())
-            if len(children) >= 1 and children[0].kind == CursorKind.DECL_REF_EXPR:
-                node_tokens = list(n.get_tokens())
-                if any(t.spelling in ['++', '--'] for t in node_tokens):
-                    return children[0].spelling
+            if len(children) >= 1:
+                base_var = get_base_var(children[0])
+                if base_var:
+                    node_tokens = list(n.get_tokens())
+                    if any(t.spelling in ['++', '--'] for t in node_tokens):
+                        return base_var
         return None
 
     def visit(node, parent_kind=None):
