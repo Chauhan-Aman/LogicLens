@@ -186,8 +186,15 @@ Input Test Case (JSON):
 ${inputJson}
 
 Your task: Solve the problem for this specific input. Return ONLY the expected output mathematically/logically.
-Return the output strictly as valid JSON representing the return value (e.g., \`5\`, \`[1, 2]\`, \`true\`, or \`"string"\`).
-Do not include markdown formatting, no backticks, and NO extra text. ONLY the JSON value.`;
+You MUST wrap your output in a JSON object with a single key "expected".
+For example, if the answer is \`false\`, return:
+{ "expected": false }
+If the answer is \`5\`, return:
+{ "expected": 5 }
+If the answer is \`[1, 2]\`, return:
+{ "expected": [1, 2] }
+
+Do not include markdown formatting, no backticks, and NO extra text. ONLY the JSON object.`;
 
   try {
     const res = await fetch('http://localhost:11434/api/generate', {
@@ -208,7 +215,8 @@ Do not include markdown formatting, no backticks, and NO extra text. ONLY the JS
     }
 
     const data = await res.json();
-    return JSON.parse(data.response);
+    const parsed = JSON.parse(data.response);
+    return parsed.expected !== undefined ? parsed.expected : parsed;
   } catch (err: any) {
     throw new Error('Failed to auto-generate expected output: ' + err.message);
   }
