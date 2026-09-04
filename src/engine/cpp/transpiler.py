@@ -19,14 +19,14 @@ def transpile(code):
     def get_base_var(node):
         if node.kind == CursorKind.DECL_REF_EXPR:
             return node.spelling
-        if node.kind in [CursorKind.ARRAY_SUBSCRIPT_EXPR, CursorKind.CXX_OPERATOR_CALL_EXPR, CursorKind.MEMBER_REF_EXPR, CursorKind.UNEXPOSED_EXPR]:
+        if node.kind in [CursorKind.ARRAY_SUBSCRIPT_EXPR, CursorKind.CALL_EXPR, CursorKind.MEMBER_REF_EXPR, CursorKind.UNEXPOSED_EXPR]:
             children = list(node.get_children())
             if children:
                 return get_base_var(children[0])
         return None
 
     def get_modified_var(n):
-        if n.kind == CursorKind.BINARY_OPERATOR or n.kind == CursorKind.CXX_OPERATOR_CALL_EXPR:
+        if n.kind == CursorKind.BINARY_OPERATOR or n.kind == CursorKind.CALL_EXPR:
             children = list(n.get_children())
             if len(children) >= 2:
                 base_var = get_base_var(children[0])
