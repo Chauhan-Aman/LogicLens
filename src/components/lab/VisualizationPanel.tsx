@@ -119,7 +119,7 @@ export default function VisualizationPanel() {
       };
 
       if (currentStep > 0) {
-        const prevV = timeline[currentStep - 1].state.variables[k];
+        const prevV = timeline[currentStep - 1].variables[k];
         if (typeof prevV === 'string' && prevV.length === v.length && prevV !== v) {
           const diffs = [];
           for (let i = 0; i < v.length; i++) {
@@ -128,7 +128,7 @@ export default function VisualizationPanel() {
           if (diffs.length === 1) {
             let isSwap = false;
             if (currentStep > 1) {
-              const prevPrevV = timeline[currentStep - 2].state.variables[k];
+              const prevPrevV = timeline[currentStep - 2].variables[k];
               if (typeof prevPrevV === 'string' && prevPrevV.length === v.length && prevPrevV !== v) {
                  const overallDiffs = [];
                  for (let i = 0; i < v.length; i++) {
