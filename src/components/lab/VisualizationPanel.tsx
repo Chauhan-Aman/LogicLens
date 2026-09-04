@@ -276,7 +276,7 @@ export default function VisualizationPanel() {
                     state={state}
                     pointers={pointers}
                     windowRange={windowRange}
-                    showBarChart={isSortLike && state.values.every(v => typeof v === 'number')}
+                    showBarChart={isSortLike && state.values.every((v: any) => typeof v === 'number')}
                   />
                 );
               })}

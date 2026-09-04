@@ -60,6 +60,39 @@ export default function SmartArrayCanvas({
     return matching.sort((a, b) => b.depth - a.depth)[0];
   }
 
+  // Calculate indices to display (condense large sparse arrays)
+  let displayIndices = Array.from({ length: values.length }, (_, i) => i);
+  let isCondensed = false;
+
+  if (values.length > 30) {
+    // Find most common value to use as "default"
+    const freq = new Map<any, number>();
+    for (const v of values) {
+      freq.set(v, (freq.get(v) ?? 0) + 1);
+    }
+    let defaultVal = values[0];
+    let maxFreq = 0;
+    for (const [v, count] of freq.entries()) {
+      if (count > maxFreq) {
+        maxFreq = count;
+        defaultVal = v;
+      }
+    }
+
+    // Only condense if the default value covers more than 80% of the array
+    if (maxFreq > values.length * 0.8) {
+      isCondensed = true;
+      displayIndices = displayIndices.filter(idx => {
+        if (values[idx] !== defaultVal) return true;
+        if (highlights.has(idx)) return true;
+        if (pointerMap[idx] && pointerMap[idx].length > 0) return true;
+        if (idx === swapA || idx === swapB) return true;
+        if (idx === state.writeIndex) return true;
+        return false;
+      });
+    }
+  }
+
   function cellClass(idx: number): string {
     if (idx === swapA || idx === swapB)
       return 'ring-2 ring-yellow-400 bg-yellow-400/20 text-yellow-100 font-bold scale-110 z-10';
@@ -134,58 +167,80 @@ export default function SmartArrayCanvas({
         /* Cell block mode */
         <div className="relative flex flex-wrap gap-1.5 mt-8 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
           <AnimatePresence>
-            {values.map((val, idx) => {
-              const cellPtrs = pointerMap[idx] ?? [];
-              return (
-                <motion.div
-                  key={state.ids ? state.ids[idx] : idx}
-                  layout
-                  initial={{ opacity: 0, scale: 0.7 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.12, delay: idx * 0.015 }}
-                  className="relative flex flex-col items-center gap-0.5"
-                >
-                  {/* Pointer labels above cell */}
-                  <div className="absolute bottom-full mb-1 flex flex-col items-center justify-end pointer-events-none z-10">
-                    <div className="flex items-end justify-center gap-1 whitespace-nowrap">
-                      {cellPtrs.map(p => {
-                        const colorClass = POINTER_PALETTE[pointerNames.indexOf(p) % POINTER_PALETTE.length];
-                        return (
-                          <motion.div
-                            key={p}
-                            layout
-                            layoutId={`ptr-${name}-${p}`}
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`flex flex-col items-center leading-none`}
-                          >
-                            <span className={`text-[10px] font-bold font-mono ${colorClass.split(' ')[0]}`}>{p}</span>
-                            <span className={`text-[8px] -mt-0.5 ${colorClass.split(' ')[0]}`}>▼</span>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Cell */}
+            {displayIndices.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-xs text-white/40 font-mono italic p-2"
+              >
+                (All values are default)
+              </motion.div>
+            ) : (
+              displayIndices.map((idx) => {
+                const val = values[idx];
+                const cellPtrs = pointerMap[idx] ?? [];
+                return (
                   <motion.div
+                    key={state.ids ? state.ids[idx] : idx}
                     layout
-                    animate={{
-                      scale: highlights.has(idx) || idx === swapA || idx === swapB ? 1.12 : 1,
-                    }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-                    className={`w-11 h-11 flex items-center justify-center rounded-lg font-mono text-sm transition-colors duration-150 ${cellClass(idx)}`}
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.12, delay: (displayIndices.indexOf(idx)) * 0.015 }}
+                    className="relative flex flex-col items-center gap-0.5"
                   >
-                    {String(val)}
-                  </motion.div>
+                    {/* Pointer labels above cell */}
+                    <div className="absolute bottom-full mb-1 flex flex-col items-center justify-end pointer-events-none z-10">
+                      <div className="flex items-end justify-center gap-1 whitespace-nowrap">
+                        {cellPtrs.map(p => {
+                          const colorClass = POINTER_PALETTE[pointerNames.indexOf(p) % POINTER_PALETTE.length];
+                          return (
+                            <motion.div
+                              key={p}
+                              layout
+                              layoutId={`ptr-${name}-${p}`}
+                              initial={{ opacity: 0, y: -6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className={`flex flex-col items-center leading-none`}
+                            >
+                              <span className={`text-[10px] font-bold font-mono ${colorClass.split(' ')[0]}`}>{p}</span>
+                              <span className={`text-[8px] -mt-0.5 ${colorClass.split(' ')[0]}`}>▼</span>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                  {/* Index below */}
-                  <span className="text-[9px] font-mono text-white/20">{idx}</span>
-                </motion.div>
-              );
-            })}
+                    {/* Cell */}
+                    <motion.div
+                      layout
+                      animate={{
+                        scale: highlights.has(idx) || idx === swapA || idx === swapB ? 1.12 : 1,
+                      }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+                      className={`w-11 h-11 flex items-center justify-center rounded-lg font-mono text-sm transition-colors duration-150 ${cellClass(idx)}`}
+                    >
+                      {String(val)}
+                    </motion.div>
+
+                    {/* Index below */}
+                    <span className="text-[9px] font-mono text-white/20">{idx}</span>
+                  </motion.div>
+                );
+              })
+            )}
           </AnimatePresence>
         </div>
+      )}
+
+      {/* Sparse array indicator */}
+      {isCondensed && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-xs text-violet-400/60 font-mono italic mt-3"
+        >
+          * Displaying only modified or active elements (sparse array)
+        </motion.div>
       )}
 
       {/* Swap callout */}
@@ -193,7 +248,7 @@ export default function SmartArrayCanvas({
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-xs text-yellow-400 font-mono"
+          className="flex items-center gap-2 text-xs text-yellow-400 font-mono mt-2"
         >
           <span>⇄</span>
           <span>Swapping [{swapA}] ↔ [{swapB}]</span>

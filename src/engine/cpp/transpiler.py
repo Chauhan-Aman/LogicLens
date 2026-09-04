@@ -89,6 +89,7 @@ def transpile(code):
                     if parent_kind != CursorKind.FOR_STMT:
                         injection = f'\n__ll_set_var("{name}", {name});'.encode('utf-8')
                         replacements.append((semicolon_offset + 1, injection))
+                        print(f'VAR {name}: end={end_offset}, semi={semicolon_offset}')
         
         if node.kind == CursorKind.FOR_STMT or node.kind == CursorKind.WHILE_STMT:
             declared_vars = []
