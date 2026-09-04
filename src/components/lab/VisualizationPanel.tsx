@@ -58,7 +58,6 @@ export default function VisualizationPanel() {
     );
   }
 
-  const hasArrays = Object.keys(snap.arrays).length > 0;
   const hasMapsOrSets = Object.keys(snap.maps).length > 0 || Object.keys(snap.sets).length > 0;
   const hasStack = snap.callStack.length > 0;
 
