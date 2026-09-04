@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, ChevronLeft, ChevronRight, Layers, BookOpen, Cpu, GitBranch, X, Plus } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, ChevronDown, Layers, BookOpen, Cpu, GitBranch, X, Plus } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import CodeEditor from '@/components/lab/CodeEditor';
 import ProblemPanel from '@/components/lab/ProblemPanel';
@@ -32,15 +32,37 @@ export default function LabPage() {
   const [diffFilter, setDiffFilter] = useState('All');
   const [showAddProblem, setShowAddProblem] = useState(false);
 
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+
   // Combine static and custom problems
   const allProblems = useMemo(() => [...PROBLEMS, ...customProblems], [customProblems]);
 
-  const filtered = allProblems.filter(p => {
-    const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
-    const matchDiff = diffFilter === 'All' || p.difficulty === diffFilter;
-    return matchSearch && matchDiff;
-  });
+  // Group by folder
+  const grouped = useMemo(() => {
+    const isSearching = search.trim() !== '';
+    const groups: Record<string, Problem[]> = {};
+    
+    allProblems.forEach(p => {
+      const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
+        p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
+      const matchDiff = diffFilter === 'All' || p.difficulty === diffFilter;
+      
+      if (matchSearch && matchDiff) {
+        const folder = p.tags.includes('Custom') ? 'Custom' : (p.tags[0] ?? 'Other');
+        if (!groups[folder]) groups[folder] = [];
+        groups[folder].push(p);
+      }
+    });
+
+    // Auto-expand all if searching
+    if (isSearching) {
+      const newExpanded = { ...expandedFolders };
+      Object.keys(groups).forEach(k => newExpanded[k] = true);
+      setExpandedFolders(newExpanded);
+    }
+    
+    return groups;
+  }, [allProblems, search, diffFilter]);
 
   const allSolutions = useMemo(() => {
     if (!activeProblem) return [];
@@ -151,22 +173,57 @@ export default function LabPage() {
             </div>
 
             {/* Problem list */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-              <div className="px-2 py-1.5 flex items-center gap-1.5">
-                <Layers size={11} className="text-white/25" />
-                <span className="text-[10px] text-white/25 font-mono uppercase tracking-widest">
-                  {filtered.length} Problems
-                </span>
+            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+              <div className="px-2 py-1.5 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Layers size={11} className="text-white/25" />
+                  <span className="text-[10px] text-white/25 font-mono uppercase tracking-widest">
+                    {Object.values(grouped).flat().length} Problems
+                  </span>
+                </div>
               </div>
-              {filtered.map(p => (
-                <ProblemCard
-                  key={p.id}
-                  problem={p}
-                  active={activeProblem?.id === p.id}
-                  onSelect={selectProblem}
-                  onDelete={p.tags.includes('Custom') ? (prob) => deleteProblem(prob.id) : undefined}
-                />
-              ))}
+
+              {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([folder, probs]) => {
+                const isExpanded = expandedFolders[folder] ?? true; // default expanded
+                return (
+                  <div key={folder} className="space-y-1">
+                    <button
+                      onClick={() => setExpandedFolders(prev => ({ ...prev, [folder]: !isExpanded }))}
+                      className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-white/5 rounded-md transition-colors"
+                    >
+                      <span className="text-xs font-semibold text-white/70">{folder}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-white/30">{probs.length}</span>
+                        <ChevronDown 
+                          size={14} 
+                          className={`text-white/40 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
+                        />
+                      </div>
+                    </button>
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden space-y-1.5"
+                        >
+                          {probs.map(p => (
+                            <ProblemCard
+                              key={p.id}
+                              problem={p}
+                              active={activeProblem?.id === p.id}
+                              onSelect={selectProblem}
+                              onDelete={p.tags.includes('Custom') ? (prob) => deleteProblem(prob.id) : undefined}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Stats footer */}

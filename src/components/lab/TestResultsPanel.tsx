@@ -3,12 +3,16 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLabStore } from '@/store/labStore';
-import { Check, X, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { Check, X, Search, ChevronUp, ChevronDown, BrainCircuit, Loader2 } from 'lucide-react';
 import { formatJsonInput } from '@/utils/formatters';
+import { analyzeCode } from '@/engine/llmClient';
 
 export default function TestResultsPanel() {
-  const { testResults, setTimeline, setInputJson, setExecutionError } = useLabStore();
+  const { testResults, setTimeline, setInputJson, setExecutionError, activeProblem, userCode } = useLabStore();
   const [expanded, setExpanded] = useState(true);
+  
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
 
   if (testResults.length === 0) return null;
 
@@ -102,6 +106,49 @@ export default function TestResultsPanel() {
                 </tbody>
               </table>
             </div>
+
+            {/* AI Review Section (Shows only if tests failed) */}
+            {!allPassed && (
+              <div className="p-3 border-t border-white/5 bg-gradient-to-r from-violet-500/5 to-cyan-500/5">
+                <div className="flex items-start gap-3">
+                  <button
+                    onClick={async () => {
+                      if (!activeProblem) return;
+                      setIsAnalyzing(true);
+                      setAiFeedback(null);
+                      try {
+                        const failedTest = testResults.find(r => !r.passed);
+                        const context = failedTest 
+                          ? `Input: ${formatJsonInput(failedTest.input)}\nExpected: ${formatJsonInput(failedTest.expected)}\nActual: ${failedTest.error || formatJsonInput(failedTest.actual)}`
+                          : undefined;
+                        const feedback = await analyzeCode(activeProblem.title, activeProblem.description, userCode, context);
+                        setAiFeedback(feedback);
+                      } catch (err: any) {
+                        setAiFeedback(`Error: ${err.message}`);
+                      } finally {
+                        setIsAnalyzing(false);
+                      }
+                    }}
+                    disabled={isAnalyzing}
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 font-mono text-[10px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50"
+                  >
+                    {isAnalyzing ? <Loader2 size={12} className="animate-spin" /> : <BrainCircuit size={12} />}
+                    {isAnalyzing ? 'Analyzing...' : 'Grill Me'}
+                  </button>
+                  <div className="flex-1">
+                    {aiFeedback ? (
+                      <div className="text-xs font-sans text-white/80 leading-relaxed bg-black/40 p-3 rounded-lg border border-white/10">
+                        {aiFeedback}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] font-mono text-white/40 mt-1.5">
+                        Stuck? Click 'Grill Me' to get a real-time AI hint about why your code is failing, without revealing the full answer.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

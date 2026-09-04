@@ -7,6 +7,7 @@ interface SmartArrayCanvasProps {
   name: string;
   state: ArrayState;
   pointers?: Record<string, number>;
+  windowRange?: [number, number];
   showBarChart?: boolean;
 }
 
@@ -31,6 +32,7 @@ export default function SmartArrayCanvas({
   name,
   state,
   pointers = {},
+  windowRange,
   showBarChart = false,
 }: SmartArrayCanvasProps) {
   const values = state.values;
@@ -59,16 +61,22 @@ export default function SmartArrayCanvas({
 
   function cellClass(idx: number): string {
     if (idx === swapA || idx === swapB)
-      return 'ring-2 ring-yellow-400 bg-yellow-400/20 text-yellow-100 font-bold scale-110';
+      return 'ring-2 ring-yellow-400 bg-yellow-400/20 text-yellow-100 font-bold scale-110 z-10';
     if (idx === state.writeIndex)
-      return 'ring-2 ring-emerald-400 bg-emerald-400/20 text-emerald-100 font-bold';
+      return 'ring-2 ring-emerald-400 bg-emerald-400/20 text-emerald-100 font-bold z-10';
     if (highlights.has(idx))
-      return 'ring-2 ring-white bg-white text-black font-bold shadow-lg shadow-white/20';
+      return 'ring-2 ring-white bg-white text-black font-bold shadow-lg shadow-white/20 z-10';
     const range = getRangeForIdx(idx);
     if (range) {
       const palette = RANGE_PALETTE[range.color ?? 'violet'];
       return `border ${palette.border} ${palette.bg}`;
     }
+    
+    if (windowRange && idx >= windowRange[0] && idx <= windowRange[1]) {
+      // Glow effect for sliding window elements
+      return 'ring-1 ring-cyan-500/50 bg-cyan-500/15 text-cyan-50 font-bold';
+    }
+    
     return 'ring-1 ring-white/15 bg-white/5 text-white/80';
   }
 

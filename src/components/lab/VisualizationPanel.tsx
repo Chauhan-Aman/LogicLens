@@ -2,8 +2,9 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLabStore } from '@/store/labStore';
-import SmartArrayCanvas from '@/components/visualizers/SmartArrayCanvas';
-import VariableChips from '@/components/visualizers/VariableChips';
+import SmartArrayCanvas from '../visualizers/SmartArrayCanvas';
+import SmartGridCanvas from '../visualizers/SmartGridCanvas';
+import VariableChips from '../visualizers/VariableChips';
 import ComparisonCallout from '@/components/visualizers/ComparisonCallout';
 import CallStackVisual from '@/components/visualizers/CallStackVisual';
 import HashMapRenderer from '@/components/visualizers/HashMapRenderer';
@@ -137,6 +138,19 @@ export default function VisualizationPanel() {
     }
   }
 
+  // Detect a window range from standard variable names
+  let windowRange: [number, number] | undefined;
+  if ('left' in pointers && 'right' in pointers) windowRange = [pointers.left, pointers.right];
+  else if ('start' in pointers && 'end' in pointers) windowRange = [pointers.start, pointers.end];
+  else if ('l' in pointers && 'r' in pointers) windowRange = [pointers.l, pointers.r];
+  else if ('i' in pointers && 'j' in pointers) {
+    if (pointers.i <= pointers.j) windowRange = [pointers.i, pointers.j];
+  }
+  
+  if (windowRange && windowRange[0] > windowRange[1]) {
+    windowRange = [windowRange[1], windowRange[0]];
+  }
+
   // Detect if this looks like a sorting scenario (for bar chart mode)
   const isSortLike = arrayNames.some(n =>
     snap.arrays[n].swapIndices !== undefined || (snap.event.type === 'ARRAY_SWAP')
@@ -192,15 +206,27 @@ export default function VisualizationPanel() {
         {hasArrays && (
           <Section title="Arrays" color="violet">
             <div className="space-y-6">
-              {Object.entries(snap.arrays).map(([name, state]) => (
-                <SmartArrayCanvas
-                  key={name}
-                  name={name}
-                  state={state}
-                  pointers={pointers}
-                  showBarChart={isSortLike && state.values.every(v => typeof v === 'number')}
-                />
-              ))}
+              {Object.entries(snap.arrays).map(([name, state]) => {
+                const is2D = state.values.length > 0 && Array.isArray(state.values[0]);
+                
+                return is2D ? (
+                  <SmartGridCanvas
+                    key={name}
+                    name={name}
+                    state={state}
+                    pointers={pointers}
+                  />
+                ) : (
+                  <SmartArrayCanvas
+                    key={name}
+                    name={name}
+                    state={state}
+                    pointers={pointers}
+                    windowRange={windowRange}
+                    showBarChart={isSortLike && state.values.every(v => typeof v === 'number')}
+                  />
+                );
+              })}
             </div>
           </Section>
         )}

@@ -41,6 +41,44 @@ Please provide a concise, helpful, and educational response. Do not give away th
   }
 }
 
+export async function analyzeCode(problemTitle: string, problemDescription: string, userCode: string, errorContext?: string): Promise<string> {
+  const prompt = `You are LogicLens, an expert algorithmic tutor. 
+The user is working on the problem: "${problemTitle}".
+Description: ${problemDescription}
+
+Their current code is:
+\`\`\`
+${userCode}
+\`\`\`
+
+${errorContext ? `The code failed with the following error/test case:\n${errorContext}\n` : `The user wants a code review to optimize time/space complexity.\n`}
+
+Provide a concise, conversational code review. Point out the specific flaw, bug, or inefficiency (e.g., "You're looping twice, making it O(n²)", or "Your pointer is going out of bounds"). Give a hint on how to fix it, but DO NOT provide the fully corrected code. Keep your response under 4 sentences.`;
+
+  try {
+    const res = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama3.2',
+        prompt: prompt,
+        stream: false,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to connect to Ollama. Make sure Ollama is running and llama3.2 is pulled.');
+    }
+
+    const data = await res.json();
+    return data.response;
+  } catch (err: any) {
+    throw new Error(err.message || 'Error connecting to Local LLM');
+  }
+}
+
 export async function generateConceptualView(problemTitle: string, problemDescription: string): Promise<{ problemConcept: string, optimalConcept: string, graphic?: string[] }> {
   const prompt = `You are an expert algorithm explainer. Generate a conceptual breakdown for the problem: "${problemTitle}".
 Description: ${problemDescription}
