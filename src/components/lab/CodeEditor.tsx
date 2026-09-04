@@ -155,8 +155,10 @@ export default function CodeEditor() {
 
   function handleEditorMount(editor: unknown, monaco: unknown) {
     editorRef.current = editor;
+    const monacoInstance = monaco as any;
+
     // Register custom dark theme
-    (monaco as { editor: { defineTheme: (name: string, opts: unknown) => void } }).editor.defineTheme('logiclens-dark', {
+    monacoInstance.editor.defineTheme('logiclens-dark', {
       base: 'vs-dark',
       inherit: true,
       rules: [
@@ -176,6 +178,51 @@ export default function CodeEditor() {
       },
     });
     (editor as { updateOptions: (opts: unknown) => void }).updateOptions({ theme: 'logiclens-dark' });
+
+    // Register basic C++ formatter if not already registered
+    if (!monacoInstance.languages.getLanguages().some((l: any) => l.id === 'cpp_formatted')) {
+      monacoInstance.languages.registerDocumentFormattingEditProvider('cpp', {
+        provideDocumentFormattingEdits(model: any) {
+          const code = model.getValue();
+          let s = code.replace(/\{/g, '{\n').replace(/\}/g, '\n}');
+          s = s.replace(/\n\s*\n/g, '\n');
+          let indent = 0;
+          const lines = s.split('\n');
+          const formatted = lines.map((line: string) => {
+            line = line.trim();
+            if (!line) return '';
+            
+            // Decrease indent for closing braces
+            if (line.startsWith('}')) {
+              indent = Math.max(0, indent - 1);
+            }
+            
+            let currentIndent = indent;
+            // Access modifiers should be outdented by 1 level
+            if (line.startsWith('public:') || line.startsWith('private:') || line.startsWith('protected:')) {
+              currentIndent = Math.max(0, indent - 1);
+            }
+            
+            const result = '    '.repeat(currentIndent) + line;
+            
+            // Increase indent for opening braces
+            if (line.endsWith('{')) {
+              indent++;
+            }
+            
+            return result;
+          }).filter(Boolean).join('\n');
+
+          return [
+            {
+              range: model.getFullModelRange(),
+              text: formatted
+            }
+          ];
+        }
+      });
+      monacoInstance.languages.register({ id: 'cpp_formatted' }); // Dummy to mark as registered
+    }
   }
 
   return (
