@@ -186,34 +186,41 @@ export default function CodeEditor() {
       monacoInstance.languages.registerDocumentFormattingEditProvider('cpp', {
         provideDocumentFormattingEdits(model: any) {
           const code = model.getValue();
-          let s = code.replace(/\{/g, '{\n').replace(/\}/g, '\n}');
-          s = s.replace(/\n\s*\n/g, '\n');
+          let s = code;
+          // Add newline after { if there isn't one
+          s = s.replace(/\{[ \t]*([^\n}])/g, '{\n$1');
+          // Add newline before } if there isn't one
+          s = s.replace(/([^\n{])[ \t]*\}/g, '$1\n}');
+          
+          // Condense 3+ newlines into 2 newlines (1 empty line)
+          s = s.replace(/\n[ \t]*\n[ \t]*\n/g, '\n\n');
+
           let indent = 0;
           const lines = s.split('\n');
           const formatted = lines.map((line: string) => {
-            line = line.trim();
-            if (!line) return '';
+            const trimmed = line.trim();
+            if (!trimmed) return ''; // Preserve single empty lines
             
             // Decrease indent for closing braces
-            if (line.startsWith('}')) {
+            if (trimmed.startsWith('}')) {
               indent = Math.max(0, indent - 1);
             }
             
             let currentIndent = indent;
             // Access modifiers should be outdented by 1 level
-            if (line.startsWith('public:') || line.startsWith('private:') || line.startsWith('protected:')) {
+            if (trimmed.startsWith('public:') || trimmed.startsWith('private:') || trimmed.startsWith('protected:')) {
               currentIndent = Math.max(0, indent - 1);
             }
             
-            const result = '    '.repeat(currentIndent) + line;
+            const result = '    '.repeat(currentIndent) + trimmed;
             
             // Increase indent for opening braces
-            if (line.endsWith('{')) {
+            if (trimmed.endsWith('{')) {
               indent++;
             }
             
             return result;
-          }).filter(Boolean).join('\n');
+          }).join('\n'); // Do not filter(Boolean) so empty lines are preserved
 
           return [
             {
