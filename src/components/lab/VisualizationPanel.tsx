@@ -130,6 +130,7 @@ export default function VisualizationPanel() {
 
   const combinedArrays = { ...snap.arrays, ...stringArrays };
   const arrayNames = Object.keys(combinedArrays);
+  const hasArrays = arrayNames.length > 0;
 
   // Build per-array pointer map from variables
   const pointers: Record<string, number> = {};
