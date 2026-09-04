@@ -440,6 +440,7 @@ export default function CodeEditor() {
         <MonacoEditor
           height="100%"
           language={activeLanguage === 'cpp' ? 'cpp' : 'javascript'}
+          path={`${activeProblem?.id || 'default'}-${activeLanguage}-${activeSolution || 0}`}
           value={userCode}
           onChange={(v) => setUserCode(v ?? '')}
           options={MONACO_OPTIONS}
