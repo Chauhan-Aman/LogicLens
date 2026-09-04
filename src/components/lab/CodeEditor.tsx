@@ -451,16 +451,43 @@ export default function CodeEditor() {
             onClick={() => {
               setActiveTab(null);
               try {
-                const currentInput = JSON.parse(inputJson);
-                // Simple randomizer for arrays
-                for (const key in currentInput) {
-                  if (Array.isArray(currentInput[key])) {
-                    currentInput[key] = Array.from({ length: Math.floor(Math.random() * 5) + 4 }, () => Math.floor(Math.random() * 20));
-                  }
+                let currentInput = JSON.parse(inputJson);
+                
+                // If input is empty, borrow structure from the first test case
+                if (Object.keys(currentInput).length === 0 && activeProblem?.testCases && activeProblem.testCases.length > 0) {
+                  currentInput = JSON.parse(JSON.stringify(activeProblem.testCases[0].input));
                 }
+
+                const generateRandomValue = (val: any): any => {
+                  if (typeof val === 'number') {
+                     return Math.floor(Math.random() * 100);
+                  } else if (typeof val === 'string') {
+                     const chars = 'abcdefghijklmnopqrstuvwxyz';
+                     const len = Math.floor(Math.random() * 5) + 3;
+                     let s = '';
+                     for (let i = 0; i < len; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+                     return s;
+                  } else if (Array.isArray(val)) {
+                     const len = Math.floor(Math.random() * 5) + 3;
+                     if (val.length > 0) {
+                        return Array.from({ length: len }, () => generateRandomValue(val[0]));
+                     } else {
+                        return Array.from({ length: len }, () => Math.floor(Math.random() * 20));
+                     }
+                  } else if (typeof val === 'boolean') {
+                     return Math.random() > 0.5;
+                  }
+                  return val;
+                };
+
+                for (const key in currentInput) {
+                  currentInput[key] = generateRandomValue(currentInput[key]);
+                }
+                
                 setInputJson(JSON.stringify(currentInput, null, 2));
               } catch (e) {
                 console.error("Invalid JSON for generation");
+                alert("Please ensure the current input is valid JSON before randomizing.");
               }
             }}
             className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-white/50 hover:text-white transition-colors shrink-0 ml-4"
