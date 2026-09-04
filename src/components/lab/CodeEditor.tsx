@@ -11,6 +11,7 @@ import { executeCode } from '@/engine/executor';
 import { buildTimeline } from '@/engine/stateEngine';
 import { detectStructures } from '@/engine/detector';
 import { runAllTests } from '@/engine/testRunner';
+import { generateExpectedOutput } from '@/engine/llmClient';
 import TestResultsPanel from './TestResultsPanel';
 import { formatJsonInput } from '@/utils/formatters';
 
@@ -58,6 +59,7 @@ export default function CodeEditor() {
   const { setOverride } = useTestOverridesStore();
 
   const [isRunning, setIsRunning] = useState(false);
+  const [isGeneratingRandom, setIsGeneratingRandom] = useState(false);
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [activeTab, setActiveTab] = useState<number | null>(null);
   const [expectedJson, setExpectedJson] = useState('');
@@ -448,8 +450,11 @@ export default function CodeEditor() {
             )}
           </div>
           <button
+            disabled={isGeneratingRandom}
             onClick={async () => {
+              if (isGeneratingRandom) return;
               setActiveTab(null);
+              setIsGeneratingRandom(true);
               try {
                 let currentInput = JSON.parse(inputJson);
                 
@@ -487,10 +492,19 @@ export default function CodeEditor() {
                 const currentInputJsonStr = JSON.stringify(currentInput, null, 2);
                 setInputJson(currentInputJsonStr);
 
-                // Run code to find expected output
-                const correctCode = activeProblem?.solutions[0]?.code || userCode;
-                const execResult = await executeCode(correctCode, currentInputJsonStr, activeLanguage, activeProblem?.id || '');
-                const expectedOutput = execResult.error ? null : execResult.returnValue;
+                // Run LLM to find mathematically correct expected output
+                let expectedOutput = null;
+                try {
+                  if (activeProblem) {
+                    expectedOutput = await generateExpectedOutput(activeProblem.title, activeProblem.description, currentInputJsonStr);
+                  }
+                } catch (llmError) {
+                  console.warn("LLM failed to generate expected output:", llmError);
+                  // Fallback: try running the user code if LLM fails
+                  const correctCode = activeProblem?.solutions[0]?.code || userCode;
+                  const execResult = await executeCode(correctCode, currentInputJsonStr, activeLanguage, activeProblem?.id || '');
+                  expectedOutput = execResult.error ? null : execResult.returnValue;
+                }
                 
                 setExpectedJson(expectedOutput !== null ? JSON.stringify(expectedOutput) : '');
                 
@@ -503,11 +517,13 @@ export default function CodeEditor() {
               } catch (e) {
                 console.error("Invalid JSON for generation");
                 alert("Please ensure the current input is valid JSON before randomizing.");
+              } finally {
+                setIsGeneratingRandom(false);
               }
             }}
-            className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-white/50 hover:text-white transition-colors shrink-0 ml-4"
+            className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-white/50 hover:text-white transition-colors shrink-0 ml-4 disabled:opacity-50"
           >
-            Generate Random Test Case
+            {isGeneratingRandom ? 'Generating...' : 'Generate Random Test Case'}
           </button>
         </div>
         <textarea

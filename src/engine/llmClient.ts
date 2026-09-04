@@ -172,8 +172,44 @@ Output ONLY valid JSON matching this schema exactly, with NO markdown formatting
     }
 
     const data = await res.json();
-    return JSON.parse(data.response);
   } catch (err: any) {
     throw new Error('Failed to auto-generate problem template: ' + err.message);
+  }
+}
+
+export async function generateExpectedOutput(problemTitle: string, problemDescription: string, inputJson: string): Promise<any> {
+  const prompt = `You are an expert algorithm solver.
+Problem: "${problemTitle}"
+Description: ${problemDescription}
+
+Input Test Case (JSON):
+${inputJson}
+
+Your task: Solve the problem for this specific input. Return ONLY the expected output mathematically/logically.
+Return the output strictly as valid JSON representing the return value (e.g., \`5\`, \`[1, 2]\`, \`true\`, or \`"string"\`).
+Do not include markdown formatting, no backticks, and NO extra text. ONLY the JSON value.`;
+
+  try {
+    const res = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama3.2',
+        prompt: prompt,
+        stream: false,
+        format: 'json',
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to connect to Ollama.');
+    }
+
+    const data = await res.json();
+    return JSON.parse(data.response);
+  } catch (err: any) {
+    throw new Error('Failed to auto-generate expected output: ' + err.message);
   }
 }
