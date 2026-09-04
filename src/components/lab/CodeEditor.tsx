@@ -148,32 +148,22 @@ export default function CodeEditor() {
   useEffect(() => {
     // Sync editor code when active problem/language changes
     if (activeProblem) {
-      const numDefaults = activeProblem.solutions.length;
-      const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id);
+      const defaultSols = activeProblem.solutions.filter(s => s.language === activeLanguage);
+      const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id && s.language === activeLanguage);
+      const numDefaultsForLang = defaultSols.length;
       
       let codeToLoad = '';
-      if (activeSolution !== undefined && activeSolution >= numDefaults) {
+      if (activeSolution !== undefined && activeSolution >= numDefaultsForLang) {
         // Load a custom saved solution
-        const customIdx = activeSolution - numDefaults;
+        const customIdx = activeSolution - numDefaultsForLang;
         if (customSols[customIdx]) {
           codeToLoad = customSols[customIdx].code;
-          // Set language to match the saved solution
-          if (customSols[customIdx].language !== activeLanguage) {
-             setActiveLanguage(customSols[customIdx].language);
-          }
         }
       } else {
         // Load default solution
         const solIdx = activeSolution !== undefined ? activeSolution : 0;
-        const solution = activeProblem.solutions[solIdx] || activeProblem.solutions[0];
-        
-        if (solution && solution.language !== activeLanguage) {
-           // We'll let the onChange handler below set the language
-           // But if it matches, load it directly
-        }
-        
-        const langSol = activeProblem.solutions.find(s => s.language === activeLanguage);
-        codeToLoad = langSol ? langSol.code : `// Write your ${activeLanguage === 'cpp' ? 'C++' : 'JavaScript'} solution here...`;
+        const solution = defaultSols[solIdx] || defaultSols[0];
+        codeToLoad = solution ? solution.code : `// Write your ${activeLanguage === 'cpp' ? 'C++' : 'JavaScript'} solution here...`;
       }
       
       setUserCode(codeToLoad);
@@ -284,19 +274,22 @@ export default function CodeEditor() {
     saveCommandRef.current = () => {
       if (!userCode.trim() || !activeProblem) return;
       const { activeSolution } = useLabStore.getState();
-      const numDefaults = activeProblem.solutions.length;
-      if (activeSolution >= numDefaults) {
-        const customIdx = activeSolution - numDefaults;
-        const problemSolutions = savedSolutions.filter(s => s.problemId === activeProblem.id);
-        if (problemSolutions[customIdx]) {
-           updateSolution(problemSolutions[customIdx].id, userCode);
+      
+      const defaultSols = activeProblem.solutions.filter(s => s.language === activeLanguage);
+      const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id && s.language === activeLanguage);
+      const numDefaultsForLang = defaultSols.length;
+
+      if (activeSolution >= numDefaultsForLang) {
+        const customIdx = activeSolution - numDefaultsForLang;
+        if (customSols[customIdx]) {
+           updateSolution(customSols[customIdx].id, userCode);
            // Show a brief toast or notification if we want, but saving silently is fine
            return;
         }
       }
       setShowSaveModal(true);
     };
-  }, [userCode, activeProblem, savedSolutions, updateSolution]);
+  }, [userCode, activeProblem, activeLanguage, savedSolutions, updateSolution]);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
