@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRef, useEffect } from 'react';
 import type { ArrayState } from '@/engine/events';
 
 interface SmartArrayCanvasProps {
@@ -137,7 +138,7 @@ export default function SmartArrayCanvas({
               const cellPtrs = pointerMap[idx] ?? [];
               return (
                 <motion.div
-                  key={idx}
+                  key={state.ids ? state.ids[idx] : idx}
                   layout
                   initial={{ opacity: 0, scale: 0.7 }}
                   animate={{ opacity: 1, scale: 1 }}

@@ -118,38 +118,44 @@ export default function VisualizationPanel() {
         highlights: [],
       };
 
-      if (currentStep > 0) {
-        const prevV = timeline[currentStep - 1].variables[k];
-        if (typeof prevV === 'string' && prevV.length === v.length && prevV !== v) {
-          const diffs = [];
-          for (let i = 0; i < v.length; i++) {
-            if (v[i] !== prevV[i]) diffs.push(i);
-          }
-          if (diffs.length === 1) {
-            let isSwap = false;
-            if (currentStep > 1) {
-              const prevPrevV = timeline[currentStep - 2].variables[k];
-              if (typeof prevPrevV === 'string' && prevPrevV.length === v.length && prevPrevV !== v) {
-                 const overallDiffs = [];
-                 for (let i = 0; i < v.length; i++) {
-                   if (v[i] !== prevPrevV[i]) overallDiffs.push(i);
-                 }
-                 if (overallDiffs.length === 2 && v[overallDiffs[0]] === prevPrevV[overallDiffs[1]] && v[overallDiffs[1]] === prevPrevV[overallDiffs[0]]) {
-                    stringArrays[k].swapIndices = [overallDiffs[0], overallDiffs[1]];
-                    isSwap = true;
-                 }
-              }
+      const initialV = timeline[0].variables[k];
+      const currentIds = Array.from({length: (typeof initialV === 'string' ? initialV.length : v.length)}, (_, i) => `${k}-id-${i}`);
+
+      for (let step = 1; step <= currentStep; step++) {
+         const sP = timeline[step - 1].variables[k];
+         const sC = timeline[step].variables[k];
+         if (typeof sP === 'string' && typeof sC === 'string' && sP.length === sC.length && sP !== sC) {
+            const diffs = [];
+            for (let i = 0; i < sC.length; i++) if (sC[i] !== sP[i]) diffs.push(i);
+            
+            if (diffs.length === 1 && step > 1) {
+               const sPP = timeline[step - 2].variables[k];
+               if (typeof sPP === 'string' && sPP.length === sC.length) {
+                  const overallDiffs = [];
+                  for (let i = 0; i < sC.length; i++) if (sC[i] !== sPP[i]) overallDiffs.push(i);
+                  if (overallDiffs.length === 2 && sC[overallDiffs[0]] === sPP[overallDiffs[1]] && sC[overallDiffs[1]] === sPP[overallDiffs[0]]) {
+                     const tmp = currentIds[overallDiffs[0]];
+                     currentIds[overallDiffs[0]] = currentIds[overallDiffs[1]];
+                     currentIds[overallDiffs[1]] = tmp;
+                     if (step === currentStep) stringArrays[k].swapIndices = [overallDiffs[0], overallDiffs[1]];
+                  } else if (step === currentStep) {
+                     stringArrays[k].writeIndex = diffs[0];
+                  }
+               } else if (step === currentStep) {
+                  stringArrays[k].writeIndex = diffs[0];
+               }
+            } else if (diffs.length === 2 && sC[diffs[0]] === sP[diffs[1]] && sC[diffs[1]] === sP[diffs[0]]) {
+               const tmp = currentIds[diffs[0]];
+               currentIds[diffs[0]] = currentIds[diffs[1]];
+               currentIds[diffs[1]] = tmp;
+               if (step === currentStep) stringArrays[k].swapIndices = [diffs[0], diffs[1]];
+            } else if (step === currentStep) {
+               stringArrays[k].highlights = diffs;
             }
-            if (!isSwap) {
-              stringArrays[k].writeIndex = diffs[0];
-            }
-          } else if (diffs.length === 2 && v[diffs[0]] === prevV[diffs[1]] && v[diffs[1]] === prevV[diffs[0]]) {
-            stringArrays[k].swapIndices = [diffs[0], diffs[1]];
-          } else if (diffs.length > 1) {
-            stringArrays[k].highlights = diffs;
-          }
-        }
+         }
       }
+      
+      stringArrays[k].ids = currentIds;
 
       delete displayVariables[k];
     }

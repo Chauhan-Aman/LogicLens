@@ -88,6 +88,7 @@ export interface ArrayState {
   writeIndex?: number;       // index being written
   swapIndices?: [number, number];
   activeRanges?: ActiveRange[];
+  ids?: string[];
 }
 
 export interface MapState {

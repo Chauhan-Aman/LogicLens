@@ -139,6 +139,15 @@ export function buildTimeline(events: ExecutionEvent[]): StateSnapshot[] {
           const tmp = arr[ev.index];
           arr[ev.index] = arr[ev.indexB];
           arr[ev.indexB] = tmp;
+
+          if (!next.arrays[arrName].ids) {
+            next.arrays[arrName].ids = arr.map((_, i) => `${arrName}-id-${i}`);
+          }
+          const ids = next.arrays[arrName].ids!;
+          const tmpId = ids[ev.index];
+          ids[ev.index] = ids[ev.indexB];
+          ids[ev.indexB] = tmpId;
+
           next.arrays[arrName].swapIndices = [ev.index, ev.indexB];
           next.arrays[arrName].highlights = [ev.index, ev.indexB];
           next.annotation = `Swap ${arrName}[${ev.index}] ↔ ${arrName}[${ev.indexB}]`;
