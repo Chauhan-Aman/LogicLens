@@ -13,6 +13,7 @@ export interface SavedSolution {
 interface SavedSolutionsState {
   savedSolutions: SavedSolution[];
   saveSolution: (solution: Omit<SavedSolution, 'id' | 'timestamp'>) => void;
+  updateSolution: (id: string, code: string) => void;
   deleteSolution: (id: string) => void;
 }
 
@@ -29,6 +30,11 @@ export const useSavedSolutionsStore = create<SavedSolutionsState>()(
             timestamp: Date.now(),
           }
         ]
+      })),
+      updateSolution: (id, code) => set((state) => ({
+        savedSolutions: state.savedSolutions.map((s) => 
+          s.id === id ? { ...s, code, timestamp: Date.now() } : s
+        ),
       })),
       deleteSolution: (id) => set((state) => ({
         savedSolutions: state.savedSolutions.filter((s) => s.id !== id),

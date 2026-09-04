@@ -51,10 +51,11 @@ export default function CodeEditor() {
     setActiveProblem,
     activeLanguage,
     setActiveLanguage,
+    activeSolution,
     setActiveSolution,
   } = useLabStore();
   
-  const { saveSolution, savedSolutions } = useSavedSolutionsStore();
+  const { saveSolution, updateSolution, savedSolutions } = useSavedSolutionsStore();
   const { updateProblem } = useCustomProblemsStore();
   const { setOverride } = useTestOverridesStore();
 
@@ -92,7 +93,7 @@ export default function CodeEditor() {
       setDetection(detection);
 
       // Execute
-      const result = await executeCode(userCode, inputJson, activeLanguage);
+      const result = await executeCode(userCode, inputJson, activeLanguage, activeProblem?.id);
 
       if (result.error) {
         setExecutionError(result.error);
@@ -106,7 +107,7 @@ export default function CodeEditor() {
     } finally {
       setIsRunning(false);
     }
-  }, [userCode, inputJson, activeLanguage, setTimeline, setDetection, setExecutionError]);
+  }, [userCode, inputJson, activeLanguage, setTimeline, setDetection, setExecutionError, activeProblem]);
 
   const handleRunAllTests = useCallback(async () => {
     if (!userCode.trim() || !activeProblem?.testCases) return;
@@ -118,7 +119,7 @@ export default function CodeEditor() {
       // Detect structures on first run
       setDetection(detectStructures(userCode));
 
-      const results = await runAllTests(userCode, activeProblem.testCases, activeLanguage);
+      const results = await runAllTests(userCode, activeProblem.testCases, activeLanguage, activeProblem.id);
       useLabStore.getState().setTestResults(results);
 
       // If there are failures, load the first failure into visualizer
@@ -145,15 +146,52 @@ export default function CodeEditor() {
   }, [userCode, activeProblem, activeLanguage, setTimeline, setDetection, setExecutionError, setInputJson]);
 
   useEffect(() => {
-    // When problem or language changes, we reset things
+    // Sync editor code when active problem/language changes
     if (activeProblem) {
+      const numDefaults = activeProblem.solutions.length;
+      const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id);
+      
+      let codeToLoad = '';
+      if (activeSolution !== undefined && activeSolution >= numDefaults) {
+        // Load a custom saved solution
+        const customIdx = activeSolution - numDefaults;
+        if (customSols[customIdx]) {
+          codeToLoad = customSols[customIdx].code;
+          // Set language to match the saved solution
+          if (customSols[customIdx].language !== activeLanguage) {
+             setActiveLanguage(customSols[customIdx].language);
+          }
+        }
+      } else {
+        // Load default solution
+        const solIdx = activeSolution !== undefined ? activeSolution : 0;
+        const solution = activeProblem.solutions[solIdx] || activeProblem.solutions[0];
+        
+        if (solution && solution.language !== activeLanguage) {
+           // We'll let the onChange handler below set the language
+           // But if it matches, load it directly
+        }
+        
+        const langSol = activeProblem.solutions.find(s => s.language === activeLanguage);
+        codeToLoad = langSol ? langSol.code : `// Write your ${activeLanguage === 'cpp' ? 'C++' : 'JavaScript'} solution here...`;
+      }
+      
+      setUserCode(codeToLoad);
+      setTimeline([]);
+      setExecutionError(null);
+
+      // Load first test case if available
       if (activeProblem.testCases && activeProblem.testCases.length > 0) {
         setActiveTab(0);
+        setInputJson(formatJsonInput(activeProblem.testCases[0].input));
+        setExpectedJson(activeProblem.testCases[0].expected !== null && activeProblem.testCases[0].expected !== undefined ? JSON.stringify(activeProblem.testCases[0].expected) : '');
       } else {
         setActiveTab(null);
+        setInputJson('{\n  \n}');
+        setExpectedJson('');
       }
     }
-  }, [activeProblem]);
+  }, [activeProblem, activeSolution]); // Re-run if activeProblem or activeSolution changes
 
   function handleEditorMount(editor: unknown, monaco: unknown) {
     editorRef.current = editor;
@@ -244,11 +282,21 @@ export default function CodeEditor() {
   const saveCommandRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     saveCommandRef.current = () => {
-      if (userCode.trim()) {
-        setShowSaveModal(true);
+      if (!userCode.trim() || !activeProblem) return;
+      const { activeSolution } = useLabStore.getState();
+      const numDefaults = activeProblem.solutions.length;
+      if (activeSolution >= numDefaults) {
+        const customIdx = activeSolution - numDefaults;
+        const problemSolutions = savedSolutions.filter(s => s.problemId === activeProblem.id);
+        if (problemSolutions[customIdx]) {
+           updateSolution(problemSolutions[customIdx].id, userCode);
+           // Show a brief toast or notification if we want, but saving silently is fine
+           return;
+        }
       }
+      setShowSaveModal(true);
     };
-  }, [userCode]);
+  }, [userCode, activeProblem, savedSolutions, updateSolution]);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -342,7 +390,9 @@ export default function CodeEditor() {
           )}
           
           <button
-            onClick={() => setShowSaveModal(true)}
+            onClick={() => {
+              if (saveCommandRef.current) saveCommandRef.current();
+            }}
             disabled={!userCode.trim()}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-all duration-150 disabled:opacity-50"
           >
