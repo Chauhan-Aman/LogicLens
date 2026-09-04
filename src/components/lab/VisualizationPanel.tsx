@@ -117,6 +117,40 @@ export default function VisualizationPanel() {
         values: Array.from(v),
         highlights: [],
       };
+
+      if (currentStep > 0) {
+        const prevV = timeline[currentStep - 1].state.variables[k];
+        if (typeof prevV === 'string' && prevV.length === v.length && prevV !== v) {
+          const diffs = [];
+          for (let i = 0; i < v.length; i++) {
+            if (v[i] !== prevV[i]) diffs.push(i);
+          }
+          if (diffs.length === 1) {
+            let isSwap = false;
+            if (currentStep > 1) {
+              const prevPrevV = timeline[currentStep - 2].state.variables[k];
+              if (typeof prevPrevV === 'string' && prevPrevV.length === v.length && prevPrevV !== v) {
+                 const overallDiffs = [];
+                 for (let i = 0; i < v.length; i++) {
+                   if (v[i] !== prevPrevV[i]) overallDiffs.push(i);
+                 }
+                 if (overallDiffs.length === 2 && v[overallDiffs[0]] === prevPrevV[overallDiffs[1]] && v[overallDiffs[1]] === prevPrevV[overallDiffs[0]]) {
+                    stringArrays[k].swapIndices = [overallDiffs[0], overallDiffs[1]];
+                    isSwap = true;
+                 }
+              }
+            }
+            if (!isSwap) {
+              stringArrays[k].writeIndex = diffs[0];
+            }
+          } else if (diffs.length === 2 && v[diffs[0]] === prevV[diffs[1]] && v[diffs[1]] === prevV[diffs[0]]) {
+            stringArrays[k].swapIndices = [diffs[0], diffs[1]];
+          } else if (diffs.length > 1) {
+            stringArrays[k].highlights = diffs;
+          }
+        }
+      }
+
       delete displayVariables[k];
     }
   }
