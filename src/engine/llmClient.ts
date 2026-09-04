@@ -89,15 +89,17 @@ export async function generateConceptualView(problemTitle: string, problemDescri
   const prompt = `You are an expert algorithm explainer. Generate a conceptual breakdown for the problem: "${problemTitle}".
 Description: ${problemDescription}
 
+CRITICAL RULE: DO NOT write any actual code (no JavaScript, no C++, etc) in your response unless explicitly asked. Explain concepts purely in plain English.
+
 Output ONLY valid JSON matching this schema exactly, with NO markdown formatting, NO backticks, and NO extra text:
 {
   "problemConcept": "A 1-2 sentence simple explanation of the core problem.",
-  "optimalConcept": "A 2-3 sentence explanation of the optimal approach (e.g. HashMap, Two Pointers).",
+  "optimalConcept": "A 2-3 sentence explanation of the optimal approach (e.g. HashMap, Two Pointers). DO NOT write code here.",
   "graphic": [
-    "A simple text trace or data state. Do NOT draw ASCII boxes like +---+. Use simple array syntax [1, 2, 3] and carets ^ to point to elements if needed."
+    "A simple text trace or data state. Do NOT draw ASCII boxes like +---+. Use simple array syntax [1, 2, 3] and carets ^ to point to elements if needed. Do NOT write code here."
   ]
 }
-Ensure the graphic array contains clean, readable lines of text simulating an execution trace.`;
+Ensure the graphic array contains clean, readable lines of text simulating an execution trace without actual code syntax.`;
 
   try {
     const res = await fetch('http://localhost:11434/api/generate', {

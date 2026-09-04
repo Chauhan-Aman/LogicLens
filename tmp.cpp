@@ -45,7 +45,7 @@ public:
 int main(){
 
     Solution sol;
-    cout << sol.isIsomorphic(s, t);
+    cout << boolalpha << sol.isIsomorphic(s, t) << endl;
 
     return 0;
 }
