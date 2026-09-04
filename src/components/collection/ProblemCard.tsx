@@ -76,7 +76,7 @@ export default function ProblemCard({ problem, active, onSelect, onDelete }: Pro
 
         <ArrowRight
           size={14}
-          className={`shrink-0 mt-0.5 transition-all ${active ? 'text-blue-400' : 'text-white/20'}`}
+          className={`shrink-0 mt-0.5 transition-all ${active ? 'text-blue-400' : 'text-white/20'} ${onDelete ? 'group-hover:opacity-0' : ''}`}
         />
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, ChevronLeft, ChevronRight, ChevronDown, Layers, BookOpen, Cpu, GitBranch, X, Plus } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, ChevronDown, Layers, BookOpen, Cpu, GitBranch, X, Plus, Folder, Code, List, Type, Calculator, Network, Database, Hash, Box, Compass, Sparkles } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import CodeEditor from '@/components/lab/CodeEditor';
 import ProblemPanel from '@/components/lab/ProblemPanel';
@@ -20,6 +20,25 @@ import { useMemo } from 'react';
 import { formatJsonInput } from '@/utils/formatters';
 
 const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
+
+const FOLDER_ICONS: Record<string, any> = {
+  'Custom': Sparkles,
+  'Array': List,
+  'String': Type,
+  'Math': Calculator,
+  'Tree': Network,
+  'Hash Table': Hash,
+  'Dynamic Programming': Database,
+  'Sorting': Code,
+  'Graph': Network,
+  'Matrix': Box,
+  'Two Pointers': Compass
+};
+
+const getFolderIcon = (folderName: string) => {
+  const Icon = FOLDER_ICONS[folderName] || Folder;
+  return <Icon size={14} className="text-white/60" />;
+};
 
 export default function LabPage() {
   const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, activeLanguage, setActiveLanguage, activeSolution, setActiveSolution } = useLabStore();
@@ -191,7 +210,12 @@ export default function LabPage() {
                       onClick={() => setExpandedFolders(prev => ({ ...prev, [folder]: !isExpanded }))}
                       className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-white/5 rounded-md transition-colors"
                     >
-                      <span className="text-xs font-semibold text-white/70">{folder}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md flex items-center justify-center bg-white/5 border border-white/10 shrink-0 shadow-sm">
+                          {getFolderIcon(folder)}
+                        </div>
+                        <span className="text-xs font-semibold text-white/70">{folder}</span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-mono text-white/30">{probs.length}</span>
                         <ChevronDown 
