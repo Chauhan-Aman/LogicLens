@@ -435,9 +435,9 @@ export default function CodeEditor() {
         </div>
       </div>
 
-      {/* Editor */}
       <div className="flex-1 min-h-[10rem] shrink-0">
         <MonacoEditor
+          key={`${activeProblem?.id || 'default'}-${activeLanguage}-${activeSolution || 0}`}
           height="100%"
           language={activeLanguage === 'cpp' ? 'cpp' : 'javascript'}
           path={`${activeProblem?.id || 'default'}-${activeLanguage}-${activeSolution || 0}`}

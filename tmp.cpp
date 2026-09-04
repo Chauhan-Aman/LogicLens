@@ -3,8 +3,8 @@
 
 // --- INJECTED GLOBAL INPUTS ---
 
-std::string s = "ydvupj";
-std::string t = "ahqzl";
+std::string s = "paper";
+std::string t = "title";
 
 
 struct __LL_Init {
@@ -41,4 +41,12 @@ public:
     }
 };
 
+
+int main(){
+
+    Solution sol;
+    cout << sol.isIsomorphic(s, t);
+
+    return 0;
+}
 // -----------------
