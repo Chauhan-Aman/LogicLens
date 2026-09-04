@@ -2,7 +2,8 @@
 
 import type { StateSnapshot } from '@/engine/events';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCcw, GitBranch, Variable, ArrowRightLeft, FunctionSquare, Globe, CheckCircle2, Code2, Database } from 'lucide-react';
+import { RefreshCcw, GitBranch, Variable, ArrowRightLeft, FunctionSquare, Globe, CheckCircle2, Code2 } from 'lucide-react';
+import { formatValue } from './VariableChips';
 
 interface AggregatedNodeData {
   id: string;
@@ -84,9 +85,9 @@ export default function FlowNode({ nodeData, isActive, currentStep, onClick }: F
       lastComparison = baseSnap;
     } else if (ev.type === 'VARIABLE_UPDATE') {
       if (varsSet.size > 0) {
-        title = Array.from(varsSet.entries()).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ');
+        title = Array.from(varsSet.entries()).map(([k, v]) => `${k} = ${formatValue(v)}`).join(', ');
       } else {
-        title = `${ev.variable} = ${JSON.stringify(ev.value)}`;
+        title = `${ev.variable} = ${formatValue(ev.value)}`;
       }
       subtitle = 'Variable Assignment';
       Icon = Variable;

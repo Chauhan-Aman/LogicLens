@@ -3,6 +3,7 @@
 import { useLabStore } from '@/store/labStore';
 import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
+import { formatValue } from './visualizers/VariableChips';
 
 export default function ExecutionTraceTable() {
   const { timeline, currentStep, setCurrentStep } = useLabStore();
@@ -74,7 +75,7 @@ export default function ExecutionTraceTable() {
                       ) : (
                         varEntries.map(([k, v]) => (
                           <span key={k} className="bg-white/5 px-1.5 py-0.5 rounded text-cyan-300">
-                            {k}: <span className="text-white/70">{JSON.stringify(v)}</span>
+                            {k}: <span className="text-white/70">{formatValue(v)}</span>
                           </span>
                         ))
                       )}

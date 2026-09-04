@@ -6,6 +6,7 @@ import FlowNode from './FlowNode';
 import { ArrowRight, ChevronDown, ChevronRight, GitBranch, Play, Plus, Minus, RefreshCcw, Variable, ChevronLeft, Maximize, Minimize } from 'lucide-react';
 import type { StateSnapshot } from '@/engine/events';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatValue } from './VariableChips';
 
 export interface ExecutionNode {
   id: string;
@@ -135,7 +136,7 @@ function TreeIteration({ node, currentStep, setCurrentStep, index }: { node: Exe
   };
   extractVars(node);
 
-  const varsString = Array.from(varsSet.entries()).map(([k, v]) => `${k} = ${v}`).join(', ');
+  const varsString = Array.from(varsSet.entries()).map(([k, v]) => `${k} = ${formatValue(v)}`).join(', ');
   const title = index !== undefined 
     ? (varsString ? `Iteration ${index} (${varsString})` : `Iteration ${index}`) 
     : (varsString ? `Iteration (${varsString})` : 'Iteration');

@@ -18,8 +18,8 @@ const CHIP_COLORS = [
   { ring: 'ring-white/20', bg: 'bg-white/5', text: 'text-white/70', label: 'text-white/30' },
 ];
 
-function formatValue(v: unknown): string {
-  if (Array.isArray(v)) return `[${(v as unknown[]).slice(0, 5).join(', ')}${(v as unknown[]).length > 5 ? '…' : ''}]`;
+export function formatValue(v: unknown): string {
+  if (Array.isArray(v)) return `[${(v as unknown[]).slice(0, 5).join(', ')}${(v as unknown[]).length > 5 ? ', …' : ''}]`;
   if (typeof v === 'boolean') return v ? 'true' : 'false';
   if (v === null) return 'null';
   if (v === undefined) return 'undefined';
