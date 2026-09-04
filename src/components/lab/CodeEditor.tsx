@@ -448,7 +448,7 @@ export default function CodeEditor() {
             )}
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               setActiveTab(null);
               try {
                 let currentInput = JSON.parse(inputJson);
@@ -484,7 +484,22 @@ export default function CodeEditor() {
                   currentInput[key] = generateRandomValue(currentInput[key]);
                 }
                 
-                setInputJson(JSON.stringify(currentInput, null, 2));
+                const currentInputJsonStr = JSON.stringify(currentInput, null, 2);
+                setInputJson(currentInputJsonStr);
+
+                // Run code to find expected output
+                const correctCode = activeProblem?.solutions[0]?.code || userCode;
+                const execResult = await executeCode(correctCode, currentInputJsonStr, activeLanguage, activeProblem?.id || '');
+                const expectedOutput = execResult.error ? null : execResult.returnValue;
+                
+                setExpectedJson(expectedOutput !== null ? JSON.stringify(expectedOutput) : '');
+                
+                if (activeProblem) {
+                   const newTestCase = { input: currentInput, expected: expectedOutput };
+                   const newCases = [...(activeProblem.testCases || []), newTestCase];
+                   applyTestCaseChange(newCases);
+                   setActiveTab(newCases.length - 1);
+                }
               } catch (e) {
                 console.error("Invalid JSON for generation");
                 alert("Please ensure the current input is valid JSON before randomizing.");
