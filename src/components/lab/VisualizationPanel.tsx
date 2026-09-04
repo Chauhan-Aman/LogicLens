@@ -112,7 +112,7 @@ export default function VisualizationPanel() {
   // Convert strings to pseudo-arrays for visualization
   const stringArrays: Record<string, any> = {};
   for (const [k, v] of Object.entries(displayVariables)) {
-    if (typeof v === 'string' && v.length > 1) {
+    if (typeof v === 'string' && v.length > 1 && v !== '[Object]') {
       stringArrays[k] = {
         values: Array.from(v),
         highlights: [],
