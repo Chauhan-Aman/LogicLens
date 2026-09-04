@@ -162,15 +162,28 @@ export default function LabPage() {
 
             {/* Search */}
             <div className="px-3 py-3 border-b border-white/5">
-              <div className="relative">
+              <div className="relative group">
                 <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
                 <input
                   type="text"
                   placeholder="Search problems..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 bg-white/5 rounded-lg text-xs font-mono text-white/70 placeholder-white/20 border border-white/8 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all"
+                  className="w-full pl-8 pr-8 py-2 bg-white/5 rounded-lg text-xs font-mono text-white/70 placeholder-white/20 border border-white/8 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all"
                 />
+                <AnimatePresence>
+                  {search && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      onClick={() => setSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                    >
+                      <X size={12} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Difficulty filter */}
