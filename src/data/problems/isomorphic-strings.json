@@ -1,0 +1,62 @@
+{
+  "id": "isomorphic-strings",
+  "title": "Isomorphic Strings",
+  "difficulty": "Easy",
+  "tags": [
+    "String",
+    "HashMap"
+  ],
+  "description": "Given two strings `s` and `t`, determine if they are isomorphic.\n\nTwo strings `s` and `t` are isomorphic if the characters in `s` can be replaced to get `t`.\n\nAll occurrences of a character must be replaced with another character while preserving the order of characters. No two characters may map to the same character, but a character may map to itself.",
+  "examples": [
+    {
+      "input": "s=\"egg\", t=\"add\"",
+      "output": "true"
+    },
+    {
+      "input": "s=\"foo\", t=\"bar\"",
+      "output": "false"
+    },
+    {
+      "input": "s=\"paper\", t=\"title\"",
+      "output": "true"
+    }
+  ],
+  "solutions": [
+    {
+      "name": "Two HashMaps C++",
+      "complexity": {
+        "time": "O(n)",
+        "space": "O(1)"
+      },
+      "language": "cpp",
+      "code": "#include <string>\n#include <vector>\n#include <iostream>\nusing namespace std;\n\nclass Solution {\npublic:\n    bool isIsomorphic(string s, string t) {\n        int n = s.length(), m = t.length(); \n        if(m != n) return false;\n        vector<int> map1(256, 0), map2(256, 0);\n\n        int i = 0;\n        while(i < m){\n            if(map1[s[i]] != map2[t[i]]) return false;\n\n            map1[s[i]] = i + 1;\n            map2[t[i]] = i + 1;\n            i++;\n        }\n\n        return true;\n    }\n};\n\nint main(){\n    Solution sol;\n    cout << boolalpha << sol.isIsomorphic(s, t) << endl;\n    return 0;\n}"
+    }
+  ],
+  "structures": [
+    "hashmap"
+  ],
+  "defaultInput": "{ \"s\": \"paper\", \"t\": \"title\" }",
+  "testCases": [
+    {
+      "input": {
+        "s": "egg",
+        "t": "add"
+      },
+      "expected": true
+    },
+    {
+      "input": {
+        "s": "foo",
+        "t": "bar"
+      },
+      "expected": false
+    },
+    {
+      "input": {
+        "s": "paper",
+        "t": "title"
+      },
+      "expected": true
+    }
+  ]
+}

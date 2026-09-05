@@ -66,7 +66,9 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
     }
   };
 
-  const handleSave = () => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
     if (!title.trim() || !description.trim()) {
       alert('Title and description are required.');
       return;
@@ -83,8 +85,10 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
       return;
     }
 
+    const newProblemId = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
     const newProblem: Problem = {
-      id: uuidv4(),
+      id: newProblemId || uuidv4(),
       title,
       difficulty,
       tags,
@@ -109,8 +113,23 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
       defaultInput,
     };
 
-    onSave(newProblem);
-    onClose();
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/problems', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProblem)
+      });
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+      onSave(newProblem);
+      onClose();
+    } catch (err: any) {
+      alert('Failed to save problem: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -229,8 +248,12 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
             <button onClick={onClose} className="px-4 py-2 text-sm text-white/60 hover:text-white transition-colors">
               Cancel
             </button>
-            <button onClick={handleSave} className="px-6 py-2 bg-white text-black text-sm font-bold rounded hover:bg-white/90 transition-colors">
-              Save & Open
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-bold rounded-lg shadow-lg shadow-violet-500/20 disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 size={20} className="animate-spin" /> : 'Save Problem'}
             </button>
           </div>
         </motion.div>

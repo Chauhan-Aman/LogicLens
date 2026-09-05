@@ -6,11 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "npx tsx prisma/seed.ts",
+    "postinstall": "prisma skills sync || exit 0"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@babel/standalone": "^8.0.4",
     "@monaco-editor/react": "^4.7.0",
+    "@prisma/client": "^5.22.0",
     "@types/babel__standalone": "^7.1.9",
     "@types/uuid": "^10.0.0",
     "acorn": "^8.18.0",
@@ -33,7 +39,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

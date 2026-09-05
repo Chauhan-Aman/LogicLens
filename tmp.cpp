@@ -3,8 +3,8 @@
 
 // --- INJECTED GLOBAL INPUTS ---
 
-std::string s = "paper";
-std::string t = "title";
+std::string s = "egg";
+std::string t = "add";
 
 
 struct __LL_Init {
@@ -19,6 +19,8 @@ struct __LL_Init {
 
 // --- USER CODE ---
 #include <string>
+#include <vector>
+#include <iostream>
 using namespace std;
 
 class Solution {
@@ -41,12 +43,9 @@ public:
     }
 };
 
-
 int main(){
-
     Solution sol;
     cout << boolalpha << sol.isIsomorphic(s, t) << endl;
-
     return 0;
 }
 // -----------------

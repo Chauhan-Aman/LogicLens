@@ -42,9 +42,16 @@ const getFolderIcon = (folderName: string) => {
 
 export default function LabPage() {
   const { activeProblem, setActiveProblem, setUserCode, setInputJson, setTimeline, setExecutionError, detection, activeLanguage, setActiveLanguage, activeSolution, setActiveSolution } = useLabStore();
-  const { savedSolutions, deleteSolution } = useSavedSolutionsStore();
-  const { customProblems, addProblem, deleteProblem } = useCustomProblemsStore();
-  const { getOverride } = useTestOverridesStore();
+  const { savedSolutions, deleteSolution, loadSolutions } = useSavedSolutionsStore();
+  const { customProblems, addProblem, deleteProblem, loadCustomProblems } = useCustomProblemsStore();
+  const { getOverride, loadOverrides } = useTestOverridesStore();
+
+  // Load all persistent data from DB on mount
+  useEffect(() => {
+    loadSolutions();
+    loadCustomProblems();
+    loadOverrides();
+  }, []);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
@@ -53,8 +60,12 @@ export default function LabPage() {
 
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
 
-  // Combine static and custom problems
-  const allProblems = useMemo(() => [...PROBLEMS, ...customProblems], [customProblems]);
+  // Combine static built-in problems with DB-stored ones (dedup by id)
+  const allProblems = useMemo(() => {
+    const builtInIds = new Set(PROBLEMS.map(p => p.id));
+    const dbOnly = customProblems.filter(p => !builtInIds.has(p.id));
+    return [...PROBLEMS, ...dbOnly];
+  }, [customProblems]);
 
   // Group by folder
   const grouped = useMemo(() => {

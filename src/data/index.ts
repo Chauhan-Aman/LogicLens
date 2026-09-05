@@ -11,6 +11,7 @@ import bestTimeToBuySellStock from './problems/best-time-to-buy-sell-stock.json'
 import containsDuplicate from './problems/contains-duplicate.json';
 import validAnagram from './problems/valid-anagram.json';
 import binarySearch from './problems/binary-search.json';
+import isomorphicStrings from './problems/isomorphic-strings.json';
 
 export const PROBLEMS: Problem[] = [
   twoSum,
@@ -18,4 +19,5 @@ export const PROBLEMS: Problem[] = [
   containsDuplicate,
   validAnagram,
   binarySearch,
+  isomorphicStrings,
 ] as Problem[];

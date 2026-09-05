@@ -1,0 +1,47 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Problem {
+  id           String  @id @default(uuid())
+  title        String
+  difficulty   String  // Easy, Medium, Hard
+  tags         String  // JSON stringified array of tags
+  description  String
+  examples     String  // JSON stringified array of examples
+  solutions    String  // JSON stringified array of default solutions
+  structures   String  // JSON stringified array of data structures used
+  defaultInput String
+  testCases    String  // JSON stringified array of test cases
+  
+  isBuiltIn    Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  savedSolutions SavedSolution[]
+  testOverrides  TestOverride[]
+}
+
+model SavedSolution {
+  id        String   @id @default(uuid())
+  problemId String
+  name      String
+  language  String
+  code      String
+  timestamp DateTime @default(now())
+
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+model TestOverride {
+  id        String   @id @default(uuid())
+  problemId String   @unique
+  testCases String   // JSON stringified array of test cases
+
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
