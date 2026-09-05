@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { Search, Filter, ChevronLeft, ChevronRight, ChevronDown, Layers, BookOpen, Cpu, GitBranch, X, Plus, Folder, Code, List, Type, Calculator, Network, Database, Hash, Box, Compass, Sparkles } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import CodeEditor from '@/components/lab/CodeEditor';
@@ -56,6 +57,7 @@ export default function LabPage() {
   const [search, setSearch] = useState('');
   const [diffFilter, setDiffFilter] = useState('All');
   const [showAddProblem, setShowAddProblem] = useState(false);
+  const [solutionToDelete, setSolutionToDelete] = useState<{ id: string, index: number, name: string } | null>(null);
 
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
 
@@ -73,7 +75,7 @@ export default function LabPage() {
       const matchDiff = diffFilter === 'All' || p.difficulty === diffFilter;
       
       if (matchSearch && matchDiff) {
-        const folder = p.tags.includes('Custom') ? 'Custom' : (p.tags[0] ?? 'Other');
+        const folder = p.tags[0] ?? 'Uncategorized';
         if (!groups[folder]) groups[folder] = [];
         groups[folder].push(p);
       }
@@ -148,15 +150,15 @@ export default function LabPage() {
           >
             {/* Logo & Actions */}
             <div className="px-4 py-4 border-b border-white/8 flex justify-between items-center">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-black text-xs font-bold">
+              <Link href="/" className="flex items-center gap-2.5 group cursor-pointer hover:opacity-80 transition-opacity">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-400 flex items-center justify-center text-black text-xs font-bold shadow-md shadow-white/10">
                   LL
                 </div>
                 <div>
                   <p className="text-sm font-bold text-white tracking-tight">LogicLens</p>
-                  <p className="text-[10px] text-white/30">Algorithm Lab</p>
+                  <p className="text-[10px] text-white/40 group-hover:text-white transition-colors">← Back to Home</p>
                 </div>
-              </div>
+              </Link>
               <button 
                 onClick={() => setShowAddProblem(true)} 
                 className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"
@@ -230,7 +232,7 @@ export default function LabPage() {
                       className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-white/5 rounded-md transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-md flex items-center justify-center bg-white/5 border border-white/10 shrink-0 shadow-sm">
+                        <div className="w-5 h-5 flex items-center justify-center shrink-0">
                           {getFolderIcon(folder)}
                         </div>
                         <span className="text-xs font-semibold text-white/70">{folder}</span>
@@ -306,7 +308,7 @@ export default function LabPage() {
                 <Cpu size={11} className="text-white/50" />
                 <div className="flex gap-1">
                   {detection.structures.map(s => (
-                    <span key={s} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white font-mono capitalize">
+                    <span key={s} className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono capitalize">
                       {s}
                     </span>
                   ))}
@@ -318,42 +320,61 @@ export default function LabPage() {
             )}
           </div>
 
-          {/* Solution selector */}
-          {allSolutions.length > 0 && (
-            <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5">
-              {allSolutions.map((sol, i) => (
-                <div key={sol.id || i} className={`flex items-center rounded-md transition-all ${
-                  activeSolution === i
-                    ? 'bg-white text-black'
-                    : 'text-white/40 hover:text-white/70 hover:bg-white/5'
-                }`}>
-                  <button
-                    onClick={() => selectSolution(i)}
-                    className="text-xs px-3 py-1.5 font-medium flex-1 text-left"
-                  >
-                    {sol.name}
-                  </button>
-                  {sol.isSaved && (
+          <div className="flex items-center gap-2">
+            {/* Language Selector Placeholder */}
+            <select
+              className="bg-[#0a0a0f] border border-zinc-800 text-zinc-400 text-xs rounded-lg px-2 py-1.5 outline-none focus:border-zinc-500 transition-colors cursor-not-allowed"
+              disabled
+              title="Only C++ and JS are supported currently"
+            >
+              <option>C++</option>
+              <option>JavaScript</option>
+            </select>
+
+            {/* Solution selector */}
+            {allSolutions.length > 0 && (
+              <div className="flex items-center gap-1 bg-[#0a0a0f] border border-zinc-800 rounded-lg p-0.5 shadow-inner">
+                {allSolutions.map((sol, i) => (
+                  <div key={sol.id || i} className={`flex items-center rounded-md transition-all ${
+                    activeSolution === i
+                      ? 'bg-white text-black font-semibold'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                  }`}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteSolution(sol.id);
-                        if (activeSolution === i) {
-                          selectSolution(0);
-                        } else if (activeSolution > i) {
-                          setActiveSolution(activeSolution - 1);
-                        }
-                      }}
-                      className="px-2 py-1.5 text-black/50 hover:text-red-500 transition-colors"
-                      title="Delete saved solution"
+                      onClick={() => selectSolution(i)}
+                      className="text-xs px-3 py-1.5 font-medium flex-1 text-left"
                     >
-                      <X size={12} className={activeSolution === i ? "text-black/50 hover:text-red-600" : "text-white/30 hover:text-red-400"} />
+                      {sol.name}
                     </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                    {sol.isSaved && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSolutionToDelete({ id: sol.id, index: i, name: sol.name });
+                        }}
+                        className="px-2 py-1.5 text-black/50 hover:text-red-500 transition-colors"
+                        title="Delete saved solution"
+                      >
+                        <X size={12} className={activeSolution === i ? "text-black/50 hover:text-red-600" : "text-white/30 hover:text-red-400"} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                
+                <button
+                  onClick={() => {
+                    setActiveSolution(-1);
+                    const defaultCode = activeProblem?.solutions[0]?.code || '// Write your new solution here\n';
+                    setUserCode(defaultCode);
+                  }}
+                  className="p-1.5 text-zinc-500 hover:text-white hover:bg-white/10 rounded-md transition-colors mx-1"
+                  title="New Solution"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Three-panel layout */}
@@ -390,11 +411,53 @@ export default function LabPage() {
       <AddProblemModal
         isOpen={showAddProblem}
         onClose={() => setShowAddProblem(false)}
-        onSave={(problem) => {
-          addProblem(problem);
-          selectProblem(problem);
+        onSave={async (newProblem) => {
+          await addProblem(newProblem);
+          setShowAddProblem(false);
+          selectProblem(newProblem);
         }}
       />
+
+      {/* Delete Solution Confirmation Modal */}
+      <AnimatePresence>
+        {solutionToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-2xl w-full max-w-sm"
+            >
+              <h3 className="text-lg font-bold text-white mb-2">Delete Solution</h3>
+              <p className="text-sm text-zinc-400 mb-6">
+                Are you sure you want to delete <span className="text-white font-semibold">{solutionToDelete.name}</span>? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setSolutionToDelete(null)}
+                  className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    deleteSolution(solutionToDelete.id);
+                    if (activeSolution === solutionToDelete.index) {
+                      selectSolution(0);
+                    } else if (activeSolution > solutionToDelete.index) {
+                      setActiveSolution(activeSolution - 1);
+                    }
+                    setSolutionToDelete(null);
+                  }}
+                  className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-semibold rounded-lg border border-red-500/20 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

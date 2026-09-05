@@ -16,7 +16,7 @@ export default function RightPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tabs Header */}
-      <div className="flex items-center gap-1 px-4 pt-2 border-b border-white/8 bg-[#090912] shrink-0">
+      <div className="flex items-center gap-1 px-4 pt-2 border-b border-white/5 bg-[#080810] shrink-0">
         <TabButton 
           id="visualizer" 
           active={activeTab === 'visualizer'} 
@@ -75,8 +75,8 @@ function TabButton({
       onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-t-lg transition-all border-b-2 ${
         active
-          ? 'text-white border-white bg-white/5'
-          : 'text-white/40 border-transparent hover:text-white/70 hover:bg-white/5'
+          ? 'text-zinc-100 border-zinc-100 bg-white/5'
+          : 'text-zinc-500 border-transparent hover:text-zinc-300 hover:bg-white/5'
       }`}
     >
       {icon}

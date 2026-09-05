@@ -34,7 +34,7 @@ export default function CodeEditorHeader({
   const { saveSolution, savedSolutions } = useSavedSolutionsStore();
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 border-b border-white/8 bg-black/20 shrink-0">
+    <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-[#080810] shrink-0">
       <div className="flex items-center gap-3">
         <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
         <span className="text-xs font-semibold text-white/70 uppercase tracking-wider font-mono">
@@ -43,7 +43,7 @@ export default function CodeEditorHeader({
       </div>
       <div className="flex items-center gap-2 relative">
         {showSaveModal && (
-          <div className="absolute top-full right-0 mt-2 w-64 bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl p-3 z-50 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-full right-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl p-3 z-50 animate-in fade-in slide-in-from-top-2">
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs font-bold text-white/80 uppercase">Save Solution</span>
               <button onClick={() => setShowSaveModal(false)} className="text-white/40 hover:text-white">
@@ -73,7 +73,7 @@ export default function CodeEditorHeader({
                 }
               }}
               placeholder="e.g. Optimized HashMap"
-              className="w-full bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-emerald-500/50 mb-3"
+              className="w-full bg-black border border-zinc-700 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-zinc-400 mb-3"
             />
             <div className="flex justify-end gap-2">
               <button 
@@ -83,23 +83,28 @@ export default function CodeEditorHeader({
                 Cancel
               </button>
               <button 
-                onClick={() => {
+                onClick={async () => {
                   if (saveName.trim() && activeProblem) {
-                    saveSolution({
+                    await saveSolution({
                       problemId: activeProblem.id,
                       name: saveName.trim(),
                       language: activeLanguage,
                       code: userCode,
                     });
+                    
+                    // We must read fresh state because the closure is stale
+                    const { savedSolutions: freshSaved } = useSavedSolutionsStore.getState();
                     const numDefaults = activeProblem.solutions.length;
-                    const numCustom = savedSolutions.filter(s => s.problemId === activeProblem.id).length;
-                    setActiveSolution(numDefaults + numCustom);
+                    const numCustom = freshSaved.filter(s => s.problemId === activeProblem.id).length;
+                    
+                    // The newly added solution is the last one in the custom list
+                    setActiveSolution(numDefaults + numCustom - 1);
                     setShowSaveModal(false);
                     setSaveName('');
                   }
                 }}
                 disabled={!saveName.trim()}
-                className="px-3 py-1 text-[11px] font-medium bg-emerald-500 text-black rounded hover:bg-emerald-400 disabled:opacity-50 transition-colors"
+                className="px-3 py-1 text-[11px] font-medium bg-white text-black rounded hover:bg-zinc-200 disabled:opacity-50 transition-colors"
               >
                 Save
               </button>
@@ -113,7 +118,7 @@ export default function CodeEditorHeader({
             else setShowSaveModal(true);
           }}
           disabled={!userCode.trim()}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-all duration-150 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-150 disabled:opacity-50"
         >
           <Save size={12} />
           Save
@@ -136,7 +141,7 @@ export default function CodeEditorHeader({
         <button
           onClick={onRun}
           disabled={isRunning || isRunningAll || !userCode.trim()}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-white/10 hover:bg-white/20 text-white transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRunning ? (
             <><Cpu size={14} className="animate-spin" /> Running...</>
@@ -149,7 +154,7 @@ export default function CodeEditorHeader({
           <button
             onClick={onRunAll}
             disabled={isRunning || isRunningAll || !userCode.trim()}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-white hover:bg-gray-200 text-black shadow-lg shadow-white/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-zinc-200 hover:bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRunningAll ? (
               <><Cpu size={14} className="animate-spin" /> Testing...</>

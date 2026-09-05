@@ -55,3 +55,47 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Missing problem id' }, { status: 400 });
+
+    await prisma.problem.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting problem:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const problem: Problem = await req.json();
+
+    if (!problem.id) {
+      return NextResponse.json({ error: 'Missing problem id' }, { status: 400 });
+    }
+
+    const updated = await prisma.problem.update({
+      where: { id: problem.id },
+      data: {
+        title: problem.title,
+        difficulty: problem.difficulty,
+        tags: JSON.stringify(problem.tags || []),
+        description: problem.description,
+        examples: JSON.stringify(problem.examples || []),
+        solutions: JSON.stringify(problem.solutions || []),
+        structures: JSON.stringify(problem.structures || []),
+        defaultInput: problem.defaultInput || '{}',
+        testCases: JSON.stringify(problem.testCases || []),
+      }
+    });
+
+    return NextResponse.json({ success: true, message: 'Problem updated successfully', id: updated.id });
+  } catch (error: any) {
+    console.error('Error updating problem:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}

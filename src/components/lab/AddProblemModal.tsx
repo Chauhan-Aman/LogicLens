@@ -23,7 +23,7 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
   const [defaultInput, setDefaultInput] = useState('{}');
   const [testCasesJson, setTestCasesJson] = useState('[]');
   const [examples, setExamples] = useState<{ input: string, output: string }[]>([]);
-  const [tags, setTags] = useState<string[]>(['Custom']);
+  const [tags, setTags] = useState<string[]>(['Uncategorized']);
   
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -57,7 +57,7 @@ export default function AddProblemModal({ isOpen, onClose, onSave }: AddProblemM
       if (template.tags && Array.isArray(template.tags) && template.tags.length > 0) {
         setTags(template.tags);
       } else {
-        setTags(['Custom']); // Fallback
+        setTags(['Uncategorized']); // Fallback
       }
     } catch (err: any) {
       alert(err.message || 'Failed to auto-generate problem. Ensure Ollama is running.');

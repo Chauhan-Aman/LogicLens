@@ -44,25 +44,26 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-[#080810] text-white">
       {/* ─── Hero ─── */}
-      <section className="relative overflow-hidden">
-        {/* Background glow */}
+      <section className="relative overflow-hidden min-h-[90vh] flex flex-col justify-center">
+        {/* Background glow & Grid */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-violet-600/10 blur-[100px]" />
-          <div className="absolute top-[10%] left-[10%] w-[400px] h-[400px] rounded-full bg-cyan-600/8 blur-[80px]" />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-white/5 blur-[120px]" />
         </div>
 
         <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-20">
           {/* Nav */}
           <nav className="flex items-center justify-between mb-20">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-400 flex items-center justify-center text-black text-xs font-bold">
                 LL
               </div>
               <span className="font-bold text-lg tracking-tight">LogicLens</span>
             </div>
             <Link
               href="/lab"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/8 hover:bg-white/12 border border-white/10 text-sm font-medium transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md text-sm font-medium transition-all shadow-lg"
             >
               Open Lab →
             </Link>
@@ -70,14 +71,14 @@ export default async function HomePage() {
 
           {/* Hero text */}
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-300 text-xs font-mono mb-6 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               Interactive Algorithm Execution Laboratory
             </div>
 
             <h1 className="text-5xl font-black leading-tight tracking-tight mb-6">
               See your algorithms{' '}
-              <span className="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">
                 think.
               </span>
             </h1>
@@ -91,8 +92,7 @@ export default async function HomePage() {
             <div className="flex items-center gap-4">
               <Link
                 href="/lab"
-                id="cta-open-lab"
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-semibold text-sm shadow-2xl shadow-violet-500/20 transition-all duration-200"
+                className="flex items-center gap-2 px-8 py-3.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-sm shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all duration-300 transform hover:-translate-y-0.5"
               >
                 Open the Lab ⚡
               </Link>
@@ -100,7 +100,7 @@ export default async function HomePage() {
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/6 hover:bg-white/10 border border-white/10 text-sm font-medium text-white/70 hover:text-white transition-all"
+                className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-sm text-sm font-medium text-white/80 hover:text-white transition-all duration-300"
               >
                 GitHub →
               </a>
@@ -119,9 +119,10 @@ export default async function HomePage() {
           ].map(stat => (
             <div
               key={stat.label}
-              className="flex flex-col items-center py-6 rounded-2xl bg-white/3 border border-white/8"
+              className="relative overflow-hidden flex flex-col items-center py-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm group hover:border-white/20 transition-all duration-300"
             >
-              <span className="text-3xl font-black bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="relative z-10 text-4xl font-black bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">
                 {stat.value}
               </span>
               <span className="text-xs text-white/30 font-mono mt-1 uppercase tracking-widest">
@@ -142,11 +143,12 @@ export default async function HomePage() {
           {FEATURE_CARDS.map(f => (
             <div
               key={f.title}
-              className="p-5 rounded-2xl bg-white/3 border border-white/8 hover:border-white/15 hover:bg-white/5 transition-all"
+              className="relative overflow-hidden p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-white/20 hover:bg-white/10 transition-all duration-300 group"
             >
-              <div className="text-2xl mb-3">{f.icon}</div>
-              <h3 className="font-semibold text-sm mb-2">{f.title}</h3>
-              <p className="text-sm text-white/40 leading-relaxed">{f.description}</p>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative z-10 text-2xl mb-4 p-3 rounded-2xl bg-white/5 inline-block">{f.icon}</div>
+              <h3 className="relative z-10 font-bold text-base mb-2 group-hover:text-white transition-colors">{f.title}</h3>
+              <p className="relative z-10 text-sm text-white/50 leading-relaxed group-hover:text-white/70 transition-colors">{f.description}</p>
             </div>
           ))}
         </div>
@@ -156,7 +158,7 @@ export default async function HomePage() {
       <section className="max-w-6xl mx-auto px-6 py-12 pb-24">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold">Problem Collection</h2>
-          <Link href="/lab" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+          <Link href="/lab" className="text-sm text-zinc-400 hover:text-white transition-colors">
             Open all →
           </Link>
         </div>
@@ -168,17 +170,16 @@ export default async function HomePage() {
               <Link
                 key={p.id}
                 href={`/lab?problem=${p.id}`}
-                className="p-4 rounded-xl bg-white/3 border border-white/8 hover:border-violet-500/30 hover:bg-violet-500/5 transition-all group"
+                className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-white/20 hover:bg-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-white/5 transition-all duration-300 group"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm font-semibold group-hover:text-violet-300 transition-colors">
+                  <span className="text-sm font-semibold group-hover:text-white transition-colors">
                     {p.title}
                   </span>
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${
-                    p.difficulty === 'Easy' ? 'bg-emerald-500/15 text-emerald-400' :
-                    p.difficulty === 'Medium' ? 'bg-yellow-500/15 text-yellow-400' :
-                    'bg-red-500/15 text-red-400'
-                  }`}>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${p.difficulty === 'Easy' ? 'bg-emerald-500/15 text-emerald-400' :
+                      p.difficulty === 'Medium' ? 'bg-yellow-500/15 text-yellow-400' :
+                        'bg-red-500/15 text-red-400'
+                    }`}>
                     {p.difficulty}
                   </span>
                 </div>

@@ -9,7 +9,7 @@ interface CustomProblemsState {
   isLoaded: boolean;
   loadCustomProblems: () => Promise<void>;
   addProblem: (problem: Problem) => Promise<void>;
-  updateProblem: (problem: Problem) => void;
+  updateProblem: (problem: Problem) => Promise<void>;
   deleteProblem: (id: string) => Promise<void>;
 }
 
@@ -47,18 +47,41 @@ export const useCustomProblemsStore = create<CustomProblemsState>((set, get) => 
     }
   },
 
-  updateProblem: (problem) => {
-    set((state) => ({
-      customProblems: state.customProblems.map((p) =>
-        p.id === problem.id ? problem : p
-      ),
-    }));
+  updateProblem: async (problem) => {
+    try {
+      const res = await fetch('/api/problems', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(problem),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to update problem');
+      }
+      set((state) => ({
+        customProblems: state.customProblems.map((p) =>
+          p.id === problem.id ? problem : p
+        ),
+      }));
+    } catch (err) {
+      console.error('updateProblem error:', err);
+      throw err;
+    }
   },
 
   deleteProblem: async (id) => {
-    // Note: no DELETE API yet for problems - could add later
-    set((state) => ({
-      customProblems: state.customProblems.filter((p) => p.id !== id),
-    }));
+    try {
+      const res = await fetch(`/api/problems?id=${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        throw new Error('Failed to delete problem');
+      }
+      set((state) => ({
+        customProblems: state.customProblems.filter((p) => p.id !== id),
+      }));
+    } catch (err) {
+      console.error('deleteProblem error:', err);
+      throw err;
+    }
   },
 }));

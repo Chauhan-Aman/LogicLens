@@ -147,14 +147,16 @@ export default function CodeEditor() {
   useEffect(() => {
     // Sync editor code when active problem/language changes
     if (activeProblem) {
-      const defaultSols = activeProblem.solutions.filter(s => s.language === activeLanguage);
-      const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id && s.language === activeLanguage);
-      const numDefaultsForLang = defaultSols.length;
+      const defaultSols = activeProblem.solutions;
+      const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id);
+      const numDefaults = defaultSols.length;
+      
+      if (activeSolution === -1) return; // Allow draft mode to retain its userCode
       
       let codeToLoad = '';
-      if (activeSolution !== undefined && activeSolution >= numDefaultsForLang) {
+      if (activeSolution !== undefined && activeSolution >= numDefaults) {
         // Load a custom saved solution
-        const customIdx = activeSolution - numDefaultsForLang;
+        const customIdx = activeSolution - numDefaults;
         if (customSols[customIdx]) {
           codeToLoad = customSols[customIdx].code;
         }
@@ -270,18 +272,29 @@ export default function CodeEditor() {
       if (!userCode.trim() || !activeProblem) return;
       const { activeSolution } = useLabStore.getState();
       
-      const defaultSols = activeProblem.solutions.filter(s => s.language === activeLanguage);
-      const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id && s.language === activeLanguage);
-      const numDefaultsForLang = defaultSols.length;
+      const defaultSols = activeProblem.solutions;
+      const customSols = savedSolutions.filter(s => s.problemId === activeProblem.id);
+      const numDefaults = defaultSols.length;
 
-      if (activeSolution >= numDefaultsForLang) {
-        const customIdx = activeSolution - numDefaultsForLang;
+      if (activeSolution >= numDefaults && activeSolution !== -1) {
+        const customIdx = activeSolution - numDefaults;
         if (customSols[customIdx]) {
            updateSolution(customSols[customIdx].id, userCode);
-           // Show a brief toast or notification if we want, but saving silently is fine
            return;
         }
+      } else if (activeSolution < numDefaults && activeSolution !== -1) {
+        // Update the default solution's code
+        const updatedProblem = { ...activeProblem };
+        updatedProblem.solutions = [...updatedProblem.solutions];
+        updatedProblem.solutions[activeSolution] = {
+          ...updatedProblem.solutions[activeSolution],
+          code: userCode
+        };
+        useCustomProblemsStore.getState().updateProblem(updatedProblem);
+        useLabStore.getState().setActiveProblem(updatedProblem);
+        return;
       }
+      
       setShowSaveModal(true);
     };
   }, [userCode, activeProblem, activeLanguage, savedSolutions, updateSolution]);
