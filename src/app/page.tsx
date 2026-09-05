@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { PROBLEMS } from '@/data/index';
+import { prisma } from '@/lib/prisma';
 
 export const metadata: Metadata = {
   title: 'LogicLens — Interactive Algorithm Execution Laboratory',
@@ -30,11 +30,15 @@ const FEATURE_CARDS = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const problems = await prisma.problem.findMany({
+    include: { savedSolutions: true }
+  });
+
   const stats = {
-    problems: PROBLEMS.length,
-    solutions: PROBLEMS.reduce((a, p) => a + p.solutions.length, 0),
-    tags: [...new Set(PROBLEMS.flatMap(p => p.tags))].length,
+    problems: problems.length,
+    solutions: problems.reduce((a, p) => a + (JSON.parse(p.solutions).length) + p.savedSolutions.length, 0),
+    tags: [...new Set(problems.flatMap(p => JSON.parse(p.tags as string) as string[]))].length,
   };
 
   return (
@@ -158,31 +162,34 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          {PROBLEMS.map(p => (
-            <Link
-              key={p.id}
-              href={`/lab?problem=${p.id}`}
-              className="p-4 rounded-xl bg-white/3 border border-white/8 hover:border-violet-500/30 hover:bg-violet-500/5 transition-all group"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-sm font-semibold group-hover:text-violet-300 transition-colors">
-                  {p.title}
-                </span>
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${
-                  p.difficulty === 'Easy' ? 'bg-emerald-500/15 text-emerald-400' :
-                  p.difficulty === 'Medium' ? 'bg-yellow-500/15 text-yellow-400' :
-                  'bg-red-500/15 text-red-400'
-                }`}>
-                  {p.difficulty}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {p.tags.slice(0, 2).map(t => (
-                  <span key={t} className="text-[10px] text-white/30 font-mono">#{t}</span>
-                ))}
-              </div>
-            </Link>
-          ))}
+          {problems.map(p => {
+            const tags = JSON.parse(p.tags as string) as string[];
+            return (
+              <Link
+                key={p.id}
+                href={`/lab?problem=${p.id}`}
+                className="p-4 rounded-xl bg-white/3 border border-white/8 hover:border-violet-500/30 hover:bg-violet-500/5 transition-all group"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm font-semibold group-hover:text-violet-300 transition-colors">
+                    {p.title}
+                  </span>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${
+                    p.difficulty === 'Easy' ? 'bg-emerald-500/15 text-emerald-400' :
+                    p.difficulty === 'Medium' ? 'bg-yellow-500/15 text-yellow-400' :
+                    'bg-red-500/15 text-red-400'
+                  }`}>
+                    {p.difficulty}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {tags.slice(0, 2).map(t => (
+                    <span key={t} className="text-[10px] text-white/30 font-mono">#{t}</span>
+                  ))}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
 

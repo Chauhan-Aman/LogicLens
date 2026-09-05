@@ -5,19 +5,19 @@ LogicLens is an Interactive Algorithm Execution Laboratory. When you write code,
 ## Tech Stack
 
 - **Framework**: [Next.js](https://nextjs.org) (App Router)
+- **Database ORM**: [Prisma](https://www.prisma.io/) (with SQLite)
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)
 - **Editor**: [Monaco Editor](https://microsoft.github.io/monaco-editor/)
 - **Styling**: Tailwind CSS
 - **Transpilation Engine**: Custom Babel (JS) and Clang/Python (C++) AST transpilers to inject tracking calls automatically.
 
-## Storage Architecture & Future Roadmap
+## Storage Architecture
 
-Currently, LogicLens operates completely client-side.
-- **Problem Data**: Stored in local JSON files (`src/data/problems/`).
-- **Saved Solutions**: Persisted using Zustand `persist` middleware in your browser's **Local Storage**. This works perfectly for a local desktop experience (handling hundreds of solutions safely up to ~5MB).
+LogicLens uses an API-centric model backed by **Prisma** and **SQLite** (`prisma/dev.db`).
 
-> [!IMPORTANT]
-> **Database Migration Requirement:** As the problem collection grows (e.g. past 100+ problems), and to support multi-device syncing, user accounts, and cloud persistence, **LogicLens must be migrated to a real database (e.g., MongoDB, PostgreSQL, Supabase).** This will require building a backend API and replacing the Local Storage strategy with secure database schemas.
+- **Database**: All problems, saved user solutions, and test case overrides are stored securely in a local SQLite database.
+- **Seeding Data**: The built-in, static problem definitions are stored as JSON files inside `prisma/seed-data/`. Run `npx prisma db seed` to initialize or reset your database with these core problems.
+- **State Hydration**: On launch, the Zustand stores (`useCustomProblemsStore`, `useSavedSolutionsStore`, etc.) fetch the persisted data from Next.js API routes (`/api/*`), guaranteeing persistence across browser resets and dev server reloads.
 
 ## Getting Started
 

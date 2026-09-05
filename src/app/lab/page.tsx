@@ -15,7 +15,6 @@ import { useCustomProblemsStore } from '@/store/customProblemsStore';
 import { useTestOverridesStore } from '@/store/testOverridesStore';
 import { v4 as uuidv4 } from 'uuid';
 import AddProblemModal from '@/components/lab/AddProblemModal';
-import { PROBLEMS } from '@/data/index';
 import { useMemo } from 'react';
 import { formatJsonInput } from '@/utils/formatters';
 
@@ -60,12 +59,8 @@ export default function LabPage() {
 
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
 
-  // Combine static built-in problems with DB-stored ones (dedup by id)
-  const allProblems = useMemo(() => {
-    const builtInIds = new Set(PROBLEMS.map(p => p.id));
-    const dbOnly = customProblems.filter(p => !builtInIds.has(p.id));
-    return [...PROBLEMS, ...dbOnly];
-  }, [customProblems]);
+  // All problems now come directly from the database (via customProblemsStore, which we should rename eventually)
+  const allProblems = customProblems;
 
   // Group by folder
   const grouped = useMemo(() => {
@@ -276,7 +271,7 @@ export default function LabPage() {
 
             {/* Stats footer */}
             <div className="px-4 py-3 border-t border-white/8 flex items-center justify-between">
-              <span className="text-[10px] text-white/25 font-mono">{PROBLEMS.length} in collection</span>
+              <span className="text-[10px] text-white/25 font-mono">{allProblems.length} in collection</span>
               <div className="flex items-center gap-1">
                 <GitBranch size={10} className="text-white/20" />
                 <span className="text-[10px] text-white/20">v1.0</span>

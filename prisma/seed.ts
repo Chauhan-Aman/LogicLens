@@ -9,7 +9,7 @@ import * as path from 'path';
 const prisma = new PrismaClient();
 
 async function main() {
-  const problemsDir = path.join(__dirname, '..', 'src', 'data', 'problems');
+  const problemsDir = path.join(__dirname, 'seed-data');
   const files = fs.readdirSync(problemsDir).filter(f => f.endsWith('.json'));
 
   let seeded = 0;

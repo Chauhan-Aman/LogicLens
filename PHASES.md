@@ -14,6 +14,7 @@
 - [Phase 3 — Timeline & State Engine](#phase-3--timeline--state-engine-completed)
 - [Phase 4 — Visualizers](#phase-4--visualizers-completed)
 - [Phase 5 — Problem Data Layer](#phase-5--problem-data-layer-completed)
+- [Phase 11 — Persistent User Data & DB Migration](#phase-11--persistent-user-data--db-migration-completed)
 - [Phase 6 — Multi-Language Backend (C++)](#phase-6--multi-language-backend-c-planned)
 - [Phase 7 — Educational & Visual Suite](#phase-7--educational--visual-suite-completed)
 - [Phase 8 — Pure Syntax JavaScript (AST Transpiler)](#phase-8--pure-syntax-javascript-ast-transpiler-completed)
@@ -117,7 +118,7 @@ User Code (Pure JS / C++)
   - Direct "Open in Lab" navigation
 
 ### Key decisions
-- Problems are stored as static JSON files in `src/data/problems/` so they are version-controllable and easily extendable.
+- Problems are stored securely in a local SQLite database (via Prisma), allowing permanent custom user-added problems. Built-in fallback data is seeded from JSON in `prisma/seed-data/`.
 - Difficulty colors follow LeetCode conventions (green/yellow/red) for instant familiarity.
 
 ### Problem Library (current)
@@ -222,7 +223,7 @@ All visualizers use a shared dark theme:
 - Multiple solutions per problem (e.g., Brute Force vs. Optimal) are supported natively.
 - `structures` field tells the visualizer which renderers to activate before execution.
 - `defaultInput` is editable JSON that users can modify freely in the UI.
-- Adding a new problem = creating one new JSON file. No code changes required.
+- Adding a new built-in problem = creating one new JSON file in `prisma/seed-data` and seeding. Custom problems can be added directly via the UI into the database.
 
 ---
 
@@ -499,33 +500,24 @@ See [STARTUP.md](./STARTUP.md) for troubleshooting and detailed setup instructio
 
 ## Contributing
 
-To add a new problem:
-1. Create `src/data/problems/<problem-id>.json` following the [Problem Schema](#json-problem-schema).
-2. Register it in `src/data/index.ts`.
+To add a new built-in problem:
+1. Create `prisma/seed-data/<problem-id>.json` following the [Problem Schema](#json-problem-schema).
+2. Run `npm run seed` to load the problem into the SQLite database.
 3. Write a pure JavaScript solution in the JSON's `code` field.
 4. That's it — the engine handles the rest.
 
 ---
 
-## Phase 11 — Persistent User Data & DB Migration 🚧 Planned
+## Phase 11 — Persistent User Data & DB Migration ✅ Completed
 
 **Goal**: Move from browser Local Storage to a persistent backend database to support a growing problem collection and multi-device syncing.
 
-### Current Implementation (Completed)
-- Custom solutions can be written, named, and saved directly from the code editor.
-- Saved solutions are persisted in **Local Storage** via Zustand's `persist` middleware.
-- A custom UI overlay allows for seamless naming without jarring browser alerts.
-- Editor tabs intelligently merge default solutions with saved solutions, filtering by active language.
-
-### Future Architecture (Planned)
-- **Database**: MongoDB, PostgreSQL, or Supabase.
-- **Backend**: Next.js API Routes for CRUD operations on solutions.
-- **Authentication**: NextAuth for user accounts.
-- **Migration Strategy**: 
-  1. Define relational/document schemas for `Users`, `Problems`, and `Solutions`.
-  2. Swap out `zustand/persist` calls with API fetches.
-  3. Allow guest users to use local storage temporarily, syncing to the database upon account creation.
-- **Why?**: Local Storage is perfect for local dev or simple desktop usage, but a 100+ problem catalog requires real database infrastructure to guarantee data integrity, prevent data loss when browser caches are cleared, and enable multi-device access.
+### What was built
+- **Database Architecture**: Replaced local storage and static JSON files with a unified **SQLite** database managed via **Prisma**.
+- **Backend APIs**: Next.js API Routes for CRUD operations on problems, solutions, and test overrides (`/api/problems`, `/api/solutions`, `/api/test-overrides`).
+- **Store Refactor**: Swapped out `zustand/persist` calls with native `fetch` requests to hydrate UI state from the DB on launch.
+- **Component Reorganization**: Broke down monolithic React components (like the 640-line `CodeEditor`) into modular files (`CodeEditorHeader`, `TestCaseEditor`) for better maintainability.
+- **Why?**: Local Storage was perfect for early local dev, but real database infrastructure guarantees data integrity, prevents data loss when browser caches are cleared, and enables custom problem generation natively from the UI.
 
 ---
 
